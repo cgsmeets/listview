@@ -1,5 +1,37 @@
 # listview
 
+Code to extract private listviews and convert this to xml
+
+1. Create a connected app with oauth enabled + digital signature (you can use the attached domain.crt and domain.key)
+2. Move the domain.key into a directory where it can be found (update the path in the code)
+3. Update the client id / secret in the code (to match your new connected app)
+4. Use an administrator account to initially authenticate to the org (I gave it alias p1)
+5. see below for yarn commands (I think yarn run build will do it)
+6. example to execute this code (without linking): ./bin/run.js extract:listview --target-org p1
+
+What does this do:
+connects to the org
+sets a specific sobject type (i.e. ACCL_Promotion\_\_c or Account)
+It runs for only 1 sobject type - if you need more then execute multiple times (after updating object type)
+Reads the available list view on specified object type for the admininstrator (this will become the list of shared listviews)
+Read the user object (use a where clause to filter on users that have a sales_org set)
+Itterate over the users:
+Login the org again with the user and retrieve the listviews
+match the list views with the list from the administrator (if it matches then it is NOT a private list view)
+retrieve the describe of the listview
+convert this into a new json structure
+convert this into a new xml (columns, filter and some other attributes)
+write to disk with the correct filename and directory path
+
+Enjoy!
+
+to do
+
+- create a public group per user
+- share the corresponding listview with the user
+- additional logic to remove some of the columns on the xml
+- additional logic to handle more complex filters and filter logic
+
 [![NPM](https://img.shields.io/npm/v/listview.svg?label=listview)](https://www.npmjs.com/package/listview) [![Downloads/week](https://img.shields.io/npm/dw/listview.svg)](https://npmjs.org/package/listview) [![License](https://img.shields.io/badge/License-BSD%203--Clause-brightgreen.svg)](https://raw.githubusercontent.com/salesforcecli/listview/main/LICENSE.txt)
 
 ## Using the template
