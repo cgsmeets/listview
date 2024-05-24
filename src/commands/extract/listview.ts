@@ -4,11 +4,13 @@
 /* eslint-disable no-console */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable sf-plugin/get-connection-with-version */
+import { writeFileSync } from 'node:fs';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { AuthInfo, AuthRemover, Connection, Messages, Org, SfError } from '@salesforce/core';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { XMLBuilder } from 'fast-xml-parser';
 import { listView, SListView, SUser, XmllistView } from '../../common/definition.js';
+
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('listview', 'extract.listview');
@@ -128,6 +130,9 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
             const objxml: XmllistView = {ListView: {fullName: f2.DeveloperName, columns: sColumns, filterScope: obj.scope, label: f2.Name as string}};;
             const xmloutput = bxml.build(objxml) as string;
             this.log(xmloutput);
+
+            const file = writeFileSync('testfile.txt',xmloutput);
+            console.log (file);
 
           }
         }
