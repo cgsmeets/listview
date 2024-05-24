@@ -128,7 +128,9 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
             }
 
             const objxml: XmllistView = {ListView: {fullName: f2.DeveloperName, columns: sColumns, filterScope: obj.scope, label: f2.Name as string}};;
-            const xmloutput = bxml.build(objxml) as string;
+            let xmloutput = bxml.build(objxml) as string;
+            xmloutput = '<?xml version="1.0" encoding="UTF-8"?>' + '\n' + xmloutput;
+
             this.log(xmloutput);
 
             const file = writeFileSync('testfile.txt',xmloutput);
