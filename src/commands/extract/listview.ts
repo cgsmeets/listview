@@ -38,6 +38,8 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
 
   public async run(): Promise<ExtractListviewResult> {
     const { flags } = await this.parse(ExtractListview);
+    const xmlns = 'http://soap.sforce.com/2006/04/metadata';
+
     let authInfo: AuthInfo;
 
     const oauth2OptionsBase = {
@@ -57,10 +59,10 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
 
   const bxml = new XMLBuilder(xmloptions);
 
-    const o: XmllistView = {ListView: {fullName: 'AAA_test', columns: ['a','b'], filterScope: 'Mine', label: 'test'}};
+/*    const o: XmllistView = {ListView: {fullName: 'AAA_test', columns: ['a','b'], filterScope: 'Mine', label: 'test'}};
     const xmlo = bxml.build(o) as string;
     this.log(xmlo);
-
+*/
 
     const con = flags['target-org'].getConnection();
     const objecttype: string = 'Account';
@@ -127,7 +129,7 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
               sColumns.push(f3.label);
             }
 
-            const objxml: XmllistView = {ListView: {fullName: f2.DeveloperName, columns: sColumns, filterScope: obj.scope, label: f2.Name as string}};;
+            const objxml: XmllistView = {ListView: {fullName: f2.DeveloperName, columns: sColumns, filterScope: obj.scope, label: f2.Name as string, _xmlns: xmlns}};;
             let xmloutput = bxml.build(objxml) as string;
             xmloutput = '<?xml version="1.0" encoding="UTF-8"?>' + '\n' + xmloutput;
 
