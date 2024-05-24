@@ -132,7 +132,7 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
            if (obj!== undefined ) {
             const sColumns: string[] = [];
             for (const f3 of obj.columns) {
-              sColumns.push(f3.label);
+              sColumns.push(objecttype.toUpperCase() + '.' + f3.fieldNameOrPath.toUpperCase());
             }
 
             const objxml: XmllistView = {ListView: {fullName: f2.DeveloperName, columns: sColumns, filterScope: obj.scope, label: f2.Name as string}};;
