@@ -9,7 +9,7 @@ import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { AuthInfo, AuthRemover, Connection, Messages, Org, SfError } from '@salesforce/core';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { XMLBuilder } from 'fast-xml-parser';
-import { listView, SListView, SUser, XmllistView } from '../../common/definition.js';
+import { Filter, listView, SListView, SUser, XmllistView } from '../../common/definition.js';
 
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -127,7 +127,7 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
         for (const f2 of qrlistviews2.records) {
           if (!setIdListView.has(f2.Id as string)) {
 
-            const obj: listView = await con2.describe('Account/listviews/00BJ8000000TWH2MAO') as unknown as listView;
+            const obj: listView = await con2.describe('Account/listviews/' +f2.Id) as unknown as listView;
 
            if (obj!== undefined ) {
             const sColumns: string[] = [];
@@ -135,7 +135,12 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
               sColumns.push(objecttype.toUpperCase() + '.' + f3.fieldNameOrPath.toUpperCase());
             }
 
-            const objxml: XmllistView = {ListView: {fullName: f2.DeveloperName, columns: sColumns, filterScope: obj.scope, label: f2.Name as string}};;
+            const filters: Filter[] = [];
+            for (const f3 of obj.whereCondition.conditions) {
+              filters.push({field: f3.field as string,operation: f3.operator as string, value: f3.values as unknown as string});
+            }
+
+            const objxml: XmllistView = {ListView: {fullName: f2.DeveloperName, columns: sColumns, filterScope: obj.scope, label: f2.Name as string, filters}};;
             let xmloutput = bxml.build(objxml) as string;
             xmloutput = '<?xml version="1.0" encoding="UTF-8"?>' + '\n' + xmloutput;
             xmloutput = xmloutput.replace('<ListView>', ListViewxmlns);
