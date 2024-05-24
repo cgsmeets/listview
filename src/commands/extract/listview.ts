@@ -38,7 +38,7 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
 
   public async run(): Promise<ExtractListviewResult> {
     const { flags } = await this.parse(ExtractListview);
-    const xmlns = 'http://soap.sforce.com/2006/04/metadata';
+    const ListViewxmlns = '<ListView xmlns="http://soap.sforce.com/2006/04/metadata">';
 
     let authInfo: AuthInfo;
 
@@ -129,10 +129,10 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
               sColumns.push(f3.label);
             }
 
-            const objxml: XmllistView = {ListView: {fullName: f2.DeveloperName, columns: sColumns, filterScope: obj.scope, label: f2.Name as string, _xmlns: xmlns}};;
+            const objxml: XmllistView = {ListView: {fullName: f2.DeveloperName, columns: sColumns, filterScope: obj.scope, label: f2.Name as string}};;
             let xmloutput = bxml.build(objxml) as string;
             xmloutput = '<?xml version="1.0" encoding="UTF-8"?>' + '\n' + xmloutput;
-            xmloutput.replace('<ListView>', '<ListView'+ xmlns +'>');
+            xmloutput.replace('<ListView>', ListViewxmlns);
             this.log(xmloutput);
 
             const file = writeFileSync('testfile.txt',xmloutput);

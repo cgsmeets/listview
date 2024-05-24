@@ -61,7 +61,6 @@ export type ListView = {
   filterScope:   string;
   filters?:       Filter[];
   label:         string;
-  _xmlns:        string;
 }
 
 export type Filter = {
