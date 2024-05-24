@@ -1,5 +1,5 @@
 
-export type ListView = {
+export type listView = {
   columns:         Column[];
   id:              string;
   orderBy:         OrderBy[];
@@ -50,15 +50,49 @@ export type ConditionCondition = {
   values:   string[];
 }
 
-export type xmllistView = {
-  fullName: string;
-  Columns: string[];
-  filterScope: string;
+export type XmllistView = {
+  ListView: ListView;
 }
 
-export type filters = {
-  field: string;
+export type ListView = {
+  fullName:      string;
+  booleanFilter?: string;
+  columns:       string[];
+  filterScope:   string;
+  filters?:       Filter[];
+  label:         string;
+}
+
+export type Filter = {
+  field:     string;
   operation: string;
-  value: number;
+  value:     string;
 }
 
+// ### Salesforce Custom Oject standard fields
+export type SObject = {
+  attributes?: attributes;
+  Id?: string;
+  Name?: string;
+  createddate?: number;
+  createdby?: string;
+  last_modifiedbydate?: number;
+  last_modifiedby?: string;
+  RecordTypeId?: string;
+}
+
+// ### API query response standard fields
+type attributes = {
+  type: string;
+  url: string;
+}
+
+// tslint:disable-next-line: class-name
+export type SUser = {
+  Username: string;
+} & SObject
+
+export type SListView = {
+  DeveloperName: string;
+  SobjectType: string;
+} & SObject

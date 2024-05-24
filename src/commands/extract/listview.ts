@@ -8,7 +8,7 @@ import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { AuthInfo, AuthRemover, Connection, Messages, Org, SfError } from '@salesforce/core';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { XMLBuilder } from 'fast-xml-parser';
-import { listView, SUser, XmllistView } from '../../common/definition.js';
+import { listView, SListView, SUser, XmllistView } from '../../common/definition.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('listview', 'extract.listview');
@@ -113,22 +113,21 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
           })
         const con2 = org2.getConnection();
 
-        const qrlistviews2 = await con2.query(qlistView);
+        const qrlistviews2 = await con2.query<SListView>(qlistView);
         for (const f2 of qrlistviews2.records) {
           if (!setIdListView.has(f2.Id as string)) {
 
             const obj: listView = await con2.describe('Account/listviews/00BJ8000000TWH2MAO') as unknown as listView;
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument
+
            if (obj!== undefined ) {
             const sColumns: string[] = [];
             for (const f3 of obj.columns) {
               sColumns.push(f3.label);
             }
 
-            const objxml: XmllistView = {ListView: {fullName: obj.id, columns: sColumns, filterScope: obj.scope, label: obj.id}};;
+            const objxml: XmllistView = {ListView: {fullName: f2.DeveloperName, columns: sColumns, filterScope: obj.scope, label: f2.Name as string}};;
             const xmloutput = bxml.build(objxml) as string;
             this.log(xmloutput);
-
 
           }
         }
