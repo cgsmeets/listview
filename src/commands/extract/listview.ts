@@ -4,7 +4,7 @@
 /* eslint-disable no-console */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable sf-plugin/get-connection-with-version */
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { AuthInfo, AuthRemover, Connection, Messages, Org, SfError } from '@salesforce/core';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -39,6 +39,8 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
   public async run(): Promise<ExtractListviewResult> {
     const { flags } = await this.parse(ExtractListview);
     const ListViewxmlns = '<ListView xmlns="http://soap.sforce.com/2006/04/metadata">';
+    const lvpath1: string = 'force-app/main/default/objects/'
+    const lvpath2: string = '/listViews/'
 
     let authInfo: AuthInfo;
 
@@ -66,6 +68,10 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
 
     const con = flags['target-org'].getConnection();
     const objecttype: string = 'Account';
+
+    const lvpath = lvpath1 + objecttype + lvpath2;
+
+    mkdirSync(lvpath, { recursive: true });
 
     const qlistView = 'SELECT Id, Name, DeveloperName FROM ListView where SobjectType=\'' + objecttype +'\''
     this.log('build list of shared listviews for ' + objecttype);
@@ -133,10 +139,19 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
             let xmloutput = bxml.build(objxml) as string;
             xmloutput = '<?xml version="1.0" encoding="UTF-8"?>' + '\n' + xmloutput;
             xmloutput = xmloutput.replace('<ListView>', ListViewxmlns);
-            this.log(xmloutput);
 
-            const file = writeFileSync('testfile.txt',xmloutput);
-            console.log (file);
+            const filename = lvpath + f2.DeveloperName + '.listView-meta.xml';
+            this.log(filename);
+
+            try {
+              writeFileSync(filename,xmloutput);
+            }
+            catch (e) {
+              const err = e as SfError;
+              this.log(err.name + ': Can not write file');
+              this.log(err.message);
+
+            }
 
           }
         }
@@ -148,3 +163,5 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
     };
   }
 }
+
+

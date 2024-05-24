@@ -1,3 +1,6 @@
+# ouput
+force-app
+
 # -- CLEAN
 tmp/
 # use yarn by default, so ignore npm
