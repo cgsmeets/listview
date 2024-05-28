@@ -53,6 +53,19 @@ export type ConditionCondition = {
 export type XmllistView = {
   ListView: ListView;
 }
+export type Package = {
+  Package?: PackageClass;
+}
+
+export type PackageClass = {
+  types:   Types;
+  version: string;
+}
+
+export type Types = {
+  members: string[];
+  name:    string;
+}
 
 export type ListView = {
   fullName:      string;

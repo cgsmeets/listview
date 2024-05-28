@@ -1,16 +1,12 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable no-unsafe-optional-chaining */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable no-console */
 /* eslint-disable no-await-in-loop */
-/* eslint-disable sf-plugin/get-connection-with-version */
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { AuthInfo, AuthRemover, Connection, Messages, Org, SfError } from '@salesforce/core';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { XMLBuilder } from 'fast-xml-parser';
-import { Filter, listView, SListView, SUser, XmllistView } from '../../common/definition.js';
-
+import { chromium } from 'playwright';
+import { Package, SListView, SUser, Types } from '../../common/definition.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('listview', 'extract.listview');
@@ -38,43 +34,45 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
 
   public async run(): Promise<ExtractListviewResult> {
     const { flags } = await this.parse(ExtractListview);
-    const ListViewxmlns = '<ListView xmlns="http://soap.sforce.com/2006/04/metadata">';
-    const lvpath1: string = 'force-app/main/default/objects/'
-    const lvpath2: string = '/listViews/'
+    // Set the object type
+    const objecttype: string = 'Account';
 
-    let authInfo: AuthInfo;
+    // Package xml only
+    const packagexmlonly: boolean = false;
 
+    // Package location and defaults
+    const packagepath = '/Users/ksmeets/Projects/Package.xml';
+
+    const sfDomain: string = 'https://d0900000dzgxueax-dev-ed.develop.my.salesforce.com';
+
+    // oauth details
     const oauth2OptionsBase = {
       clientId: '3MVG9SOw8KERNN0.2nOtUkdNWY45cnwTDz8.PBwwCbu2F4vzAU.YYgnxrKWAMlkL2n3OipOVT7Z7d9A7iDL.w',
       clientSecret: 'F7AD40CBBD9F96161AB5416F9F122B44818C1BE57C15C7F8672B4764B8544E77',
       privateKeyFile: '/Users/ksmeets/Projects/SDO/domain.key'
     };
-    const loginUrl = 'https://d0900000dzgxueax-dev-ed.develop.my.salesforce.com/services/oauth2/token';
 
-    // const oauth2Options = loginUrl ? Object.assign(oauth2OptionsBase, { loginUrl }) : oauth2OptionsBase;
-    const oauth2Options = Object.assign(oauth2OptionsBase, { loginUrl });
+    // User Scope
+    const qUsers = 'SELECT ProfileId, UserType, Id, Username, LastName, FirstName, Name FROM User limit 1';
 
-    this.log ('starting');
+    // Other defaults
+    const loginUrl = sfDomain + '/services/oauth2/token';
+    const qlistView = 'SELECT Id, Name, DeveloperName FROM ListView where SobjectType=\'' + objecttype +'\''
+    const ListViewxmlns = '<ListView xmlns="http://soap.sforce.com/2006/04/metadata">';
     const xmloptions = {
       ignoreAttributes : false
-  };
+    };
+    const bxml = new XMLBuilder(xmloptions);
 
-  const bxml = new XMLBuilder(xmloptions);
+    const oauth2Options = Object.assign(oauth2OptionsBase, { loginUrl });
 
-/*    const o: XmllistView = {ListView: {fullName: 'AAA_test', columns: ['a','b'], filterScope: 'Mine', label: 'test'}};
-    const xmlo = bxml.build(o) as string;
-    this.log(xmlo);
-*/
+    // Do some magic below
+    this.log ('init playwright browser');
+    const browser = await chromium.launch();
+    const page = await browser.newPage();
 
+    this.log ('starting process for ' + objecttype);
     const con = flags['target-org'].getConnection();
-    const objecttype: string = 'Account';
-
-    const lvpath = lvpath1 + objecttype + lvpath2;
-
-    mkdirSync(lvpath, { recursive: true });
-
-    const qlistView = 'SELECT Id, Name, DeveloperName FROM ListView where SobjectType=\'' + objecttype +'\''
-    this.log('build list of shared listviews for ' + objecttype);
 
     const setIdListView: Set<string> = new Set();
     const qrlistviews = await con.query(qlistView);
@@ -82,14 +80,17 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
       setIdListView.add(f.Id as string);
     }
 
-    this.log('retrieving users')
-    const users = await con.query<SUser>('SELECT ProfileId, UserType, Id, Username, LastName, FirstName, Name FROM User limit 1');
+    this.log('retrieving users`')
+    const users = await con.query<SUser>(qUsers);
+    let authInfo: AuthInfo;
 
     for (const f of users.records) {
-      this.log(f.Username);
+      this.log('Processing User:' + f.Username);
 
+      // TEST ONLY - SET username to f.Username for this to run as the users per the query above
       const username: string  = 'dtrump@salesforce.com.chatgpt'; // f.Username
 
+        this.log ('Authenticating user: ' + f.Username);
         try {
           authInfo = await AuthInfo.create({
           username,
@@ -115,7 +116,7 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
 
 
         }
-        this.log('Create Connection')
+        this.log('Create Connection for ' + f.Username)
 
         const org2: Org = await Org.create({
           connection: await Connection.create({
@@ -123,45 +124,85 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
           })
         const con2 = org2.getConnection();
 
+        this.log('Connection token: ' + con2.accessToken);
+
+        if (!packagexmlonly) {
+          this.log ('Open salesforce on playwright')
+          await page.goto(sfDomain + '/secur/frontdoor.jsp?sid=' + con2.accessToken);
+          await page.waitForLoadState('networkidle');
+          await page.setViewportSize({
+            width: 1280,
+            height: 960,
+          });
+        }
+
+        const packagetypes: Types = {name: '', members: []};
+
         const qrlistviews2 = await con2.query<SListView>(qlistView);
         for (const f2 of qrlistviews2.records) {
           if (!setIdListView.has(f2.Id as string)) {
 
-            const obj: listView = await con2.describe('Account/listviews/' +f2.Id) as unknown as listView;
+            const CGTListviewAPIName = 'CGT_' + f2.Id +'_' + f.Id;
+            packagetypes.members.push(objecttype.toUpperCase() + '.' + CGTListviewAPIName);
 
-           if (obj!== undefined ) {
-            const sColumns: string[] = [];
-            for (const f3 of obj.columns) {
-              sColumns.push(objecttype.toUpperCase() + '.' + f3.fieldNameOrPath.toUpperCase());
-            }
+            if (!packagexmlonly) {
 
-            const filters: Filter[] = [];
-            for (const f3 of obj.whereCondition.conditions) {
-              filters.push({field: f3.field as string,operation: f3.operator as string, value: f3.values as unknown as string});
-            }
+              await page.goto(sfDomain + '/lightning/o/Account/list?filterName=' + f2.Id);
+              await page.waitForLoadState('networkidle');
+              this.log('ListView page: ' + f2.Name);
 
-            const objxml: XmllistView = {ListView: {fullName: f2.DeveloperName, columns: sColumns, filterScope: obj.scope, label: f2.Name as string, filters}};;
-            let xmloutput = bxml.build(objxml) as string;
-            xmloutput = '<?xml version="1.0" encoding="UTF-8"?>' + '\n' + xmloutput;
-            xmloutput = xmloutput.replace('<ListView>', ListViewxmlns);
+              let locator;
+              locator = page.locator('#brandBand_1 > div > div > div > div > div.slds-page-header--object-home.slds-page-header_joined.slds-page-header_bleed.slds-page-header.slds-shrink-none.test-headerRegion.forceListViewManagerHeader > div:nth-child(2) > div:nth-child(3) > div:nth-child(1) > div > div > button > lightning-primitive-icon:nth-child(2)');
+              console.log(locator);
+              await locator.click();
+              locator = page.locator('#brandBand_1 > div > div > div > div > div.slds-page-header--object-home.slds-page-header_joined.slds-page-header_bleed.slds-page-header.slds-shrink-none.test-headerRegion.forceListViewManagerHeader > div:nth-child(2) > div:nth-child(3) > div:nth-child(1) > div > div > div > ul > li.slds-dropdown__item.listViewSettingsMenuClone > a > span');
+              await locator.click();
+              await page.waitForSelector('body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-header.slds-modal__header');
 
-            const filename = lvpath + f2.DeveloperName + '.listView-meta.xml';
-            this.log(filename);
+              this.log ('Setting the clone List Name and API Name');
+              locator = page.locator('#input-187');
+              await locator.clear();
+              await locator.fill(f2.Name as string);
 
-            try {
-              writeFileSync(filename,xmloutput);
-            }
-            catch (e) {
-              const err = e as SfError;
-              this.log(err.name + ': Can not write file');
-              this.log(err.message);
+              locator = page.locator('#input-188');
+              await locator.clear();
+              await locator.fill(CGTListviewAPIName);
 
+              this.log ('Setting the All Users see this list view');
+              locator = page.locator('#radio-193').locator('..');
+              await locator.click();
+
+              this.log ('clicking Save');
+              locator = page.locator('body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-footer.slds-modal__footer > button.slds-button.slds-button--neutral.test-confirmButton.uiButton--default.uiButton--brand.uiButton');
+              await locator.click();
+              await page.waitForLoadState('networkidle');
+
+              // await page.screenshot({fullPage: true, path: '/Users/ksmeets/Projects/test1.png'});
             }
 
           }
         }
+        await browser.close();
+
+        const packagexml: Package = {Package: {types: packagetypes, version: '58.0'}};
+        let xmloutput = bxml.build(packagexml) as string;
+        xmloutput = '<?xml version="1.0" encoding="UTF-8"?>' + '\n' + xmloutput;
+        xmloutput = xmloutput.replace('<ListView>', ListViewxmlns);
+        const filename = packagepath;
+        this.log(filename);
+
+        try {
+          writeFileSync(filename,xmloutput);
+        }
+        catch (e) {
+          const err = e as SfError;
+          this.log(err.name + ': Can not write file');
+          this.log(err.message);
+
+        }
+        this.log ('User done:' + f.Username);
+
       }
-  }
 
     return {
       path: '/Users/ksmeets/Projects/plugins/listview/src/commands/extract/listview.ts',
