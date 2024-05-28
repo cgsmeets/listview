@@ -183,11 +183,10 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
             const lvName = f2.NamespacePrefix ? objecttype.toUpperCase() + '.' + f2.NamespacePrefix + '__' + CGTListviewAPIName : objecttype.toUpperCase() + '.' + CGTListviewAPIName;
             this.log (lvName);
             const oListView = await con.metadata.read('ListView', lvName);
-            console.log (oListView);
             oListView.sharedTo = {group: ['CGT_Donald_Trump'], groups: [],channelProgramGroup:[],guestUser:[],channelProgramGroups:[], managerSubordinates: [], managers: [], portalRole:[], portalRoleAndSubordinates : [], queue : [], role :[], roleAndSubordinates: [], roleAndSubordinatesInternal: [], roles: [], rolesAndSubordinates:[], territories: [],territoriesAndSubordinates: [], territory: [], territoryAndSubordinates: []};
 
             const o = await con.metadata.update('ListView', oListView);
-            console.log (o);
+            this.log (o.success + ':' + o.fullName);
           }
 
         }
