@@ -90,6 +90,13 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
       // TEST ONLY - SET username to f.Username for this to run as the users per the query above
       const username: string  = 'dtrump@salesforce.com.chatgpt'; // f.Username
 
+      const o = await con.metadata.upsert('Group',{fullName: 'CGT_' + f.Id, name: f.Username , doesIncludeBosses: false});
+      this.log (o.success + ':' + o.fullName);
+      console.log (o);
+
+      // WIP - need to add the user to the group
+      // const o2 = await con.insert('GroupMember',{});
+
         this.log ('Authenticating user: ' + f.Username);
         try {
           authInfo = await AuthInfo.create({
@@ -117,7 +124,6 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
 
         }
         this.log('Create Connection for ' + f.Username)
-
         const org2: Org = await Org.create({
           connection: await Connection.create({
             authInfo})
@@ -183,10 +189,10 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
             const lvName = f2.NamespacePrefix ? objecttype.toUpperCase() + '.' + f2.NamespacePrefix + '__' + CGTListviewAPIName : objecttype.toUpperCase() + '.' + CGTListviewAPIName;
             this.log (lvName);
             const oListView = await con.metadata.read('ListView', lvName);
-            oListView.sharedTo = {group: ['CGT_Donald_Trump'], groups: [],channelProgramGroup:[],guestUser:[],channelProgramGroups:[], managerSubordinates: [], managers: [], portalRole:[], portalRoleAndSubordinates : [], queue : [], role :[], roleAndSubordinates: [], roleAndSubordinatesInternal: [], roles: [], rolesAndSubordinates:[], territories: [],territoriesAndSubordinates: [], territory: [], territoryAndSubordinates: []};
+            oListView.sharedTo = {group: ['CGT_'+ f.Id], groups: [],channelProgramGroup:[],guestUser:[],channelProgramGroups:[], managerSubordinates: [], managers: [], portalRole:[], portalRoleAndSubordinates : [], queue : [], role :[], roleAndSubordinates: [], roleAndSubordinatesInternal: [], roles: [], rolesAndSubordinates:[], territories: [],territoriesAndSubordinates: [], territory: [], territoryAndSubordinates: []};
 
-            const o = await con.metadata.update('ListView', oListView);
-            this.log (o.success + ':' + o.fullName);
+            const o2 = await con.metadata.update('ListView', oListView);
+            this.log (o2.success + ':' + o2.fullName);
           }
 
         }
