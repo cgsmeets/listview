@@ -1,13 +1,32 @@
 # listview
 
-Code to extract private listviews and convert this to xml
-
 1. Create a connected app with oauth enabled + digital signature (you can use the attached domain.crt and domain.key)
 2. Move the domain.key into a directory where it can be found (update the path in the code)
 3. Update the client id / secret in the code (to match your new connected app)
 4. Use an administrator account to initially authenticate to the org (I gave it alias p1)
 5. see below for yarn commands (I think yarn run build will do it)
 6. example to execute this code (without linking): ./bin/run.js extract:listview --target-org p1
+
+Latest:
+What does this do:
+connects to the org
+sets a specific sobject type (i.e. ACCL_Promotion\_\_c or Account)
+It runs for only 1 sobject type - if you need more then execute multiple times (after updating object type)
+Reads the available list view on specified object type for the admininstrator (this will become the list of shared listviews)
+Read the user object (use a where clause to filter on users that have a sales_org set)
+
+Itterate over the users:
+Login the org again with the user and retrieve the listviews
+match the list views with the list from the administrator (if it matches then it is NOT a private list view)
+Use a playwright script to clone the listview as a shared report
+Set the API name to CGT + original Id + User Id
+Create an entry for the package.xml
+
+store the package.xml
+
+Old Version:
+
+Code to extract private listviews and convert this to xml
 
 What does this do:
 connects to the org
