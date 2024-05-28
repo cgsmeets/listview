@@ -74,8 +74,11 @@ export type ListView = {
   filterScope:   string;
   filters?:       Filter[];
   label:         string;
+  sharedTo:      SharedTo;
 }
-
+export type SharedTo = {
+  group: string;
+}
 export type Filter = {
   field:     string;
   operation: string;
@@ -108,4 +111,5 @@ export type SUser = {
 export type SListView = {
   DeveloperName: string;
   SobjectType: string;
+  NamespacePrefix: string;
 } & SObject

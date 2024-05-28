@@ -38,7 +38,7 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
     const objecttype: string = 'Account';
 
     // Package xml only
-    const packagexmlonly: boolean = false;
+    const packagexmlonly: boolean = true;
 
     // Package location and defaults
     const packagepath = '/Users/ksmeets/Projects/Package.xml';
@@ -57,7 +57,7 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
 
     // Other defaults
     const loginUrl = sfDomain + '/services/oauth2/token';
-    const qlistView = 'SELECT Id, Name, DeveloperName FROM ListView where SobjectType=\'' + objecttype +'\''
+    const qlistView = 'SELECT Id, Name, DeveloperName, NamespacePrefix FROM ListView where SobjectType=\'' + objecttype +'\''
     const ListViewxmlns = '<ListView xmlns="http://soap.sforce.com/2006/04/metadata">';
     const xmloptions = {
       ignoreAttributes : false
@@ -178,9 +178,18 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
               await page.waitForLoadState('networkidle');
 
               // await page.screenshot({fullPage: true, path: '/Users/ksmeets/Projects/test1.png'});
-            }
 
+            }
+            const lvName = f2.NamespacePrefix ? objecttype.toUpperCase() + '.' + f2.NamespacePrefix + '__' + CGTListviewAPIName : objecttype.toUpperCase() + '.' + CGTListviewAPIName;
+            this.log (lvName);
+            const oListView = await con.metadata.read('ListView', lvName);
+            console.log (oListView);
+            oListView.sharedTo = {group: ['CGT_Donald_Trump'], groups: [],channelProgramGroup:[],guestUser:[],channelProgramGroups:[], managerSubordinates: [], managers: [], portalRole:[], portalRoleAndSubordinates : [], queue : [], role :[], roleAndSubordinates: [], roleAndSubordinatesInternal: [], roles: [], rolesAndSubordinates:[], territories: [],territoriesAndSubordinates: [], territory: [], territoryAndSubordinates: []};
+
+            const o = await con.metadata.update('ListView', oListView);
+            console.log (o);
           }
+
         }
         await browser.close();
 
