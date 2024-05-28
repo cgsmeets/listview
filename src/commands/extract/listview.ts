@@ -136,7 +136,7 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
           });
         }
 
-        const packagetypes: Types = {name: '', members: []};
+        const packagetypes: Types = {name: 'ListView', members: []};
 
         const qrlistviews2 = await con2.query<SListView>(qlistView);
         for (const f2 of qrlistviews2.records) {
