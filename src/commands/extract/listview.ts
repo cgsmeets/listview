@@ -6,7 +6,7 @@ import { AuthInfo, AuthRemover, Connection, Messages, Org, SfError } from '@sale
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { XMLBuilder } from 'fast-xml-parser';
 import { chromium } from 'playwright';
-import { Package, SListView, SUser, Types } from '../../common/definition.js';
+import { Package, SListView, SObject, SUser, Types } from '../../common/definition.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('listview', 'extract.listview');
@@ -53,7 +53,7 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
     };
 
     // User Scope
-    const qUsers = 'SELECT ProfileId, UserType, Id, Username, LastName, FirstName, Name FROM User limit 1';
+    const qUsers = 'SELECT ProfileId, UserType, Id, Username, LastName, FirstName, Name FROM User where username = \'dtrump@salesforce.com.chatgpt\' limit 1';
 
     // Other defaults
     const loginUrl = sfDomain + '/services/oauth2/token';
@@ -87,15 +87,17 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
     for (const f of users.records) {
       this.log('Processing User:' + f.Username);
 
-      // TEST ONLY - SET username to f.Username for this to run as the users per the query above
-      const username: string  = 'dtrump@salesforce.com.chatgpt'; // f.Username
+      const username: string  = f.Username;
 
       const o = await con.metadata.upsert('Group',{fullName: 'CGT_' + f.Id, name: f.Username , doesIncludeBosses: false});
       this.log (o.success + ':' + o.fullName);
       console.log (o);
+      const o4 = await con.query<SObject>('select id from group where developername =\''  + 'CGT_' + f.Id + '\'' + ' LIMIT 1');
+      console.log (o4);
 
       // WIP - need to add the user to the group
-      // const o2 = await con.insert('GroupMember',{});
+      const o3 = await con.insert('GroupMember',{GroupId: o4.records[0].Id, UserOrGroupId: f.Id});
+      console.log(o3);
 
         this.log ('Authenticating user: ' + f.Username);
         try {
@@ -189,6 +191,7 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
             const lvName = f2.NamespacePrefix ? objecttype.toUpperCase() + '.' + f2.NamespacePrefix + '__' + CGTListviewAPIName : objecttype.toUpperCase() + '.' + CGTListviewAPIName;
             this.log (lvName);
             const oListView = await con.metadata.read('ListView', lvName);
+            console.log (oListView);
             oListView.sharedTo = {group: ['CGT_'+ f.Id], groups: [],channelProgramGroup:[],guestUser:[],channelProgramGroups:[], managerSubordinates: [], managers: [], portalRole:[], portalRoleAndSubordinates : [], queue : [], role :[], roleAndSubordinates: [], roleAndSubordinatesInternal: [], roles: [], rolesAndSubordinates:[], territories: [],territoriesAndSubordinates: [], territory: [], territoryAndSubordinates: []};
 
             const o2 = await con.metadata.update('ListView', oListView);
