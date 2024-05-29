@@ -38,7 +38,7 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
     const objecttype: string = 'Account';
 
     // Package xml only
-    const packagexmlonly: boolean = true;
+    const packagexmlonly: boolean = false;
 
     // Package location and defaults
     const packagepath = '/Users/ksmeets/Projects/Package.xml';

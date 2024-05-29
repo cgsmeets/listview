@@ -20,6 +20,7 @@ Login the org again with the user and retrieve the listviews
 match the list views with the list from the administrator (if it matches then it is NOT a private list view)
 Use a playwright script to clone the listview as a shared report
 Set the API name to CGT + original Id + User Id
+Sets the sharedTo on the newly shared Listview using metadata API (note that this currently fails because it is too quick - this should be moved to a new command and executed separately)
 Create an entry for the package.xml
 
 store the package.xml
