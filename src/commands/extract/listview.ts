@@ -58,11 +58,13 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
     // Other defaults
     const loginUrl = sfDomain + '/services/oauth2/token';
     const qlistView = 'SELECT Id, Name, DeveloperName, NamespacePrefix FROM ListView where SobjectType=\'' + objecttype +'\''
-    const ListViewxmlns = '<ListView xmlns="http://soap.sforce.com/2006/04/metadata">';
     const xmloptions = {
       ignoreAttributes : false
     };
     const bxml = new XMLBuilder(xmloptions);
+
+    const packagetypesListView: Types = {name: 'ListView', members: []};
+    const packagetypesGroup: Types = {name: 'Group', members: []};
 
     const oauth2Options = Object.assign(oauth2OptionsBase, { loginUrl });
 
@@ -91,11 +93,10 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
 
       const o = await con.metadata.upsert('Group',{fullName: 'CGT_' + f.Id, name: f.Username , doesIncludeBosses: false});
       this.log (o.success + ':' + o.fullName);
-      console.log (o);
-      const o4 = await con.query<SObject>('select id from group where developername =\''  + 'CGT_' + f.Id + '\'' + ' LIMIT 1');
-      console.log (o4);
+      packagetypesGroup.members.push('CGT_' + f.Id);
 
       // WIP - need to add the user to the group
+      const o4 = await con.query<SObject>('select id from group where developername =\''  + 'CGT_' + f.Id + '\'' + ' LIMIT 1');
       const o3 = await con.insert('GroupMember',{GroupId: o4.records[0].Id, UserOrGroupId: f.Id});
       console.log(o3);
 
@@ -144,14 +145,14 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
           });
         }
 
-        const packagetypes: Types = {name: 'ListView', members: []};
-
         const qrlistviews2 = await con2.query<SListView>(qlistView);
         for (const f2 of qrlistviews2.records) {
           if (!setIdListView.has(f2.Id as string)) {
 
+            setIdListView.add(f2.Id as string);
+
             const CGTListviewAPIName = 'CGT_' + f2.Id +'_' + f.Id;
-            packagetypes.members.push(objecttype.toUpperCase() + '.' + CGTListviewAPIName);
+            packagetypesListView.members.push(objecttype.toUpperCase() + '.' + CGTListviewAPIName);
 
             if (!packagexmlonly) {
 
@@ -187,7 +188,7 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
 
               // await page.screenshot({fullPage: true, path: '/Users/ksmeets/Projects/test1.png'});
 
-            }
+
             const lvName = f2.NamespacePrefix ? objecttype.toUpperCase() + '.' + f2.NamespacePrefix + '__' + CGTListviewAPIName : objecttype.toUpperCase() + '.' + CGTListviewAPIName;
             this.log (lvName);
             const oListView = await con.metadata.read('ListView', lvName);
@@ -196,15 +197,16 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
 
             const o2 = await con.metadata.update('ListView', oListView);
             this.log (o2.success + ':' + o2.fullName);
+            }
           }
 
         }
         await browser.close();
 
-        const packagexml: Package = {Package: {types: packagetypes, version: '58.0'}};
+        this.log('Generate Package.xml');
+        const packagexml: Package = {Package: {types: [packagetypesListView, packagetypesGroup], version: '58.0'}};
         let xmloutput = bxml.build(packagexml) as string;
         xmloutput = '<?xml version="1.0" encoding="UTF-8"?>' + '\n' + xmloutput;
-        xmloutput = xmloutput.replace('<ListView>', ListViewxmlns);
         const filename = packagepath;
         this.log(filename);
 

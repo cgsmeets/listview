@@ -58,7 +58,7 @@ export type Package = {
 }
 
 export type PackageClass = {
-  types:   Types;
+  types:   Types[];
   version: string;
 }
 
