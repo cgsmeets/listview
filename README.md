@@ -1,5 +1,7 @@
 # listview
 
+prerequisites:
+
 1. Create a connected app with oauth enabled + digital signature (you can use the attached domain.crt and domain.key)
 2. Move the domain.key into a directory where it can be found (update the path in the code)
 3. Update the client id / secret in the code (to match your new connected app)
@@ -7,8 +9,25 @@
 5. see below for yarn commands (I think yarn run build will do it)
 6. example to execute this code (without linking): ./bin/run.js extract:listview --target-org p1
 
-Latest:
-What does this do:
+Clone:listview
+Reads CSV file format: [userid],[sobjecttype],[listviewid],[name_for_cloned_listview]
+Output <csv*input_file>.log: [userid],[listviewid],[name_for_cloned_listview],[username],[status]
+Ouput: Screenshot for every listview: LV*[userid]\_[listviewid].png
+
+query the organization and display details
+For every unique userid on csv
+query the userid from User (needed for authentication)
+Authenticate as that user
+Retrieve existing listviews for that user (createbyid = userid)
+If listview name already exist -> Skip
+Else Navigate to listview + clone + assign clone name + save
+Any errors recorded on <csv_input_file>.log
+
+NOTE: This function checks if the cloned name already exists. It works best if the new listviews that are loaded and shared via public group have a prefix or suffix (i.e. CGT\_ or \_CGT). The duplicate names check helps to prevent mishaps (i.e. when running multiple times)
+
+BELOW FOR REFERENCE ONLY
+Extract:listview
+
 connects to the org
 sets a specific sobject type (i.e. ACCL_Promotion\_\_c or Account)
 It runs for only 1 sobject type - if you need more then execute multiple times (after updating object type)
