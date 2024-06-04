@@ -20,8 +20,6 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
   public static readonly description = messages.getMessage('description');
   public static readonly examples = messages.getMessages('examples');
 
-
-
   public static readonly flags = {
     name: Flags.string({
       summary: messages.getMessage('flags.name.summary'),
@@ -49,32 +47,34 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
     const oauth2OptionsBase = {
       clientId: '3MVG9SOw8KERNN0.2nOtUkdNWY45cnwTDz8.PBwwCbu2F4vzAU.YYgnxrKWAMlkL2n3OipOVT7Z7d9A7iDL.w',
       clientSecret: 'F7AD40CBBD9F96161AB5416F9F122B44818C1BE57C15C7F8672B4764B8544E77',
-      privateKeyFile: '/Users/ksmeets/Projects/SDO/domain.key'
+      privateKeyFile: '/Users/ksmeets/Projects/SDO/domain.key',
     };
 
     // User Scope
-    const qUsers = 'SELECT ProfileId, UserType, Id, Username, LastName, FirstName, Name FROM User where username = \'dtrump@salesforce.com.chatgpt\' limit 1';
+    const qUsers =
+      "SELECT ProfileId, UserType, Id, Username, LastName, FirstName, Name FROM User where username = 'dtrump@salesforce.com.chatgpt' limit 1";
 
     // Other defaults
     const loginUrl = sfDomain + '/services/oauth2/token';
-    const qlistView = 'SELECT Id, Name, DeveloperName, NamespacePrefix FROM ListView where SobjectType=\'' + objecttype +'\''
+    const qlistView =
+      "SELECT Id, Name, DeveloperName, NamespacePrefix FROM ListView where SobjectType='" + objecttype + "'";
     const xmloptions = {
-      ignoreAttributes : false
+      ignoreAttributes: false,
     };
     const bxml = new XMLBuilder(xmloptions);
 
-    const packagetypesListView: Types = {name: 'ListView', members: []};
-    const packagetypesGroup: Types = {name: 'Group', members: []};
+    const packagetypesListView: Types = { name: 'ListView', members: [] };
+    const packagetypesGroup: Types = { name: 'Group', members: [] };
 
     const oauth2Options = Object.assign(oauth2OptionsBase, { loginUrl });
 
     // Do some magic below
-    this.log ('init playwright browser');
+    this.log('init playwright browser');
     const browser = await chromium.launch();
     const page = await browser.newPage();
 
-    this.log ('starting process for ' + objecttype);
-    const con = flags['target-org'].getConnection();
+    this.log('starting process for ' + objecttype);
+    const con = flags['target-org'].getConnection('58.0');
 
     const setIdListView: Set<string> = new Set();
     const qrlistviews = await con.query(qlistView);
@@ -82,151 +82,176 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
       setIdListView.add(f.Id as string);
     }
 
-    this.log('retrieving users`')
+    this.log('retrieving users`');
     const users = await con.query<SUser>(qUsers);
     let authInfo: AuthInfo;
 
     for (const f of users.records) {
       this.log('Processing User:' + f.Username);
 
-      const username: string  = f.Username;
+      const username: string = f.Username;
 
-      const o = await con.metadata.upsert('Group',{fullName: 'CGT_' + f.Id, name: f.Username , doesIncludeBosses: false});
-      this.log (o.success + ':' + o.fullName);
+      const o = await con.metadata.upsert('Group', {
+        fullName: 'CGT_' + f.Id,
+        name: f.Username,
+        doesIncludeBosses: false,
+      });
+      this.log(o.success + ':' + o.fullName);
       packagetypesGroup.members.push('CGT_' + f.Id);
 
       // WIP - need to add the user to the group
-      const o4 = await con.query<SObject>('select id from group where developername =\''  + 'CGT_' + f.Id + '\'' + ' LIMIT 1');
-      const o3 = await con.insert('GroupMember',{GroupId: o4.records[0].Id, UserOrGroupId: f.Id});
+      const o4 = await con.query<SObject>(
+        "select id from group where developername ='" + 'CGT_' + f.Id + "'" + ' LIMIT 1'
+      );
+      const o3 = await con.insert('GroupMember', { GroupId: o4.records[0].Id, UserOrGroupId: f.Id });
       console.log(o3);
 
-        this.log ('Authenticating user: ' + f.Username);
-        try {
-          authInfo = await AuthInfo.create({
+      this.log('Authenticating user: ' + f.Username);
+      try {
+        authInfo = await AuthInfo.create({
           username,
           oauth2Options,
         });
-        } catch(e) {
-          const err = e as SfError;
-          if (err.name === 'AuthInfoOverwriteError') {
-            this.log('Removing Auth File');
-            const rm = await AuthRemover.create();
-            await rm.removeAuth(username);
+      } catch (e) {
+        const err = e as SfError;
+        if (err.name === 'AuthInfoOverwriteError') {
+          this.log('Removing Auth File');
+          const rm = await AuthRemover.create();
+          await rm.removeAuth(username);
 
-            authInfo = await AuthInfo.create({
-              username,
-              oauth2Options,
-            });
-
-          } else {
-            this.log('Authentication Issues');
-            this.exit();
-          }
-          await authInfo.save();
-
-
-        }
-        this.log('Create Connection for ' + f.Username)
-        const org2: Org = await Org.create({
-          connection: await Connection.create({
-            authInfo})
-          })
-        const con2 = org2.getConnection();
-
-        this.log('Connection token: ' + con2.accessToken);
-
-        if (!packagexmlonly) {
-          this.log ('Open salesforce on playwright')
-          await page.goto(sfDomain + '/secur/frontdoor.jsp?sid=' + con2.accessToken);
-          await page.waitForLoadState('networkidle');
-          await page.setViewportSize({
-            width: 1280,
-            height: 960,
+          authInfo = await AuthInfo.create({
+            username,
+            oauth2Options,
           });
+        } else {
+          this.log('Authentication Issues');
+          this.exit();
         }
+        await authInfo.save();
+      }
+      this.log('Create Connection for ' + f.Username);
+      const org2: Org = await Org.create({
+        connection: await Connection.create({
+          authInfo,
+        }),
+      });
+      const con2 = org2.getConnection('58.0');
 
-        const qrlistviews2 = await con2.query<SListView>(qlistView);
-        for (const f2 of qrlistviews2.records) {
-          if (!setIdListView.has(f2.Id as string)) {
+      this.log('Connection token: ' + con2.accessToken);
 
-            setIdListView.add(f2.Id as string);
+      if (!packagexmlonly) {
+        this.log('Open salesforce on playwright');
+        await page.goto(sfDomain + '/secur/frontdoor.jsp?sid=' + con2.accessToken);
+        await page.waitForLoadState('networkidle');
+        await page.setViewportSize({
+          width: 1280,
+          height: 960,
+        });
+      }
 
-            const CGTListviewAPIName = 'CGT_' + f2.Id +'_' + f.Id;
-            packagetypesListView.members.push(objecttype.toUpperCase() + '.' + CGTListviewAPIName);
+      const qrlistviews2 = await con2.query<SListView>(qlistView);
+      for (const f2 of qrlistviews2.records) {
+        if (!setIdListView.has(f2.Id as string)) {
+          setIdListView.add(f2.Id as string);
 
-            if (!packagexmlonly) {
+          const CGTListviewAPIName = 'CGT_' + f2.Id + '_' + f.Id;
+          packagetypesListView.members.push(objecttype.toUpperCase() + '.' + CGTListviewAPIName);
 
-              await page.goto(sfDomain + '/lightning/o/Account/list?filterName=' + f2.Id);
-              await page.waitForLoadState('networkidle');
-              this.log('ListView page: ' + f2.Name);
+          if (!packagexmlonly) {
+            await page.goto(sfDomain + '/lightning/o/Account/list?filterName=' + f2.Id);
+            await page.waitForLoadState('networkidle');
+            this.log('ListView page: ' + f2.Name);
 
-              let locator;
-              locator = page.locator('#brandBand_1 > div > div > div > div > div.slds-page-header--object-home.slds-page-header_joined.slds-page-header_bleed.slds-page-header.slds-shrink-none.test-headerRegion.forceListViewManagerHeader > div:nth-child(2) > div:nth-child(3) > div:nth-child(1) > div > div > button > lightning-primitive-icon:nth-child(2)');
-              console.log(locator);
-              await locator.click();
-              locator = page.locator('#brandBand_1 > div > div > div > div > div.slds-page-header--object-home.slds-page-header_joined.slds-page-header_bleed.slds-page-header.slds-shrink-none.test-headerRegion.forceListViewManagerHeader > div:nth-child(2) > div:nth-child(3) > div:nth-child(1) > div > div > div > ul > li.slds-dropdown__item.listViewSettingsMenuClone > a > span');
-              await locator.click();
-              await page.waitForSelector('body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-header.slds-modal__header');
+            let locator;
+            locator = page.locator(
+              '#brandBand_1 > div > div > div > div > div.slds-page-header--object-home.slds-page-header_joined.slds-page-header_bleed.slds-page-header.slds-shrink-none.test-headerRegion.forceListViewManagerHeader > div:nth-child(2) > div:nth-child(3) > div:nth-child(1) > div > div > button > lightning-primitive-icon:nth-child(2)'
+            );
+            console.log(locator);
+            await locator.click();
+            locator = page.locator(
+              '#brandBand_1 > div > div > div > div > div.slds-page-header--object-home.slds-page-header_joined.slds-page-header_bleed.slds-page-header.slds-shrink-none.test-headerRegion.forceListViewManagerHeader > div:nth-child(2) > div:nth-child(3) > div:nth-child(1) > div > div > div > ul > li.slds-dropdown__item.listViewSettingsMenuClone > a > span'
+            );
+            await locator.click();
+            await page.waitForSelector(
+              'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-header.slds-modal__header'
+            );
 
-              this.log ('Setting the clone List Name and API Name');
-              locator = page.locator('#input-187');
-              await locator.clear();
-              await locator.fill(f2.Name as string);
+            this.log('Setting the clone List Name and API Name');
+            locator = page.locator('#input-187');
+            await locator.clear();
+            await locator.fill(f2.Name as string);
 
-              locator = page.locator('#input-188');
-              await locator.clear();
-              await locator.fill(CGTListviewAPIName);
+            locator = page.locator('#input-188');
+            await locator.clear();
+            await locator.fill(CGTListviewAPIName);
 
-              this.log ('Setting the All Users see this list view');
-              locator = page.locator('#radio-193').locator('..');
-              await locator.click();
+            this.log('Setting the All Users see this list view');
+            locator = page.locator('#radio-193').locator('..');
+            await locator.click();
 
-              this.log ('clicking Save');
-              locator = page.locator('body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-footer.slds-modal__footer > button.slds-button.slds-button--neutral.test-confirmButton.uiButton--default.uiButton--brand.uiButton');
-              await locator.click();
-              await page.waitForLoadState('networkidle');
+            this.log('clicking Save');
+            locator = page.locator(
+              'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-footer.slds-modal__footer > button.slds-button.slds-button--neutral.test-confirmButton.uiButton--default.uiButton--brand.uiButton'
+            );
+            await locator.click();
+            await page.waitForLoadState('networkidle');
 
-              // await page.screenshot({fullPage: true, path: '/Users/ksmeets/Projects/test1.png'});
+            // await page.screenshot({fullPage: true, path: '/Users/ksmeets/Projects/test1.png'});
 
-
-            const lvName = f2.NamespacePrefix ? objecttype.toUpperCase() + '.' + f2.NamespacePrefix + '__' + CGTListviewAPIName : objecttype.toUpperCase() + '.' + CGTListviewAPIName;
-            this.log (lvName);
+            const lvName = f2.NamespacePrefix
+              ? objecttype.toUpperCase() + '.' + f2.NamespacePrefix + '__' + CGTListviewAPIName
+              : objecttype.toUpperCase() + '.' + CGTListviewAPIName;
+            this.log(lvName);
             const oListView = await con.metadata.read('ListView', lvName);
-            console.log (oListView);
-            oListView.sharedTo = {group: ['CGT_'+ f.Id], groups: [],channelProgramGroup:[],guestUser:[],channelProgramGroups:[], managerSubordinates: [], managers: [], portalRole:[], portalRoleAndSubordinates : [], queue : [], role :[], roleAndSubordinates: [], roleAndSubordinatesInternal: [], roles: [], rolesAndSubordinates:[], territories: [],territoriesAndSubordinates: [], territory: [], territoryAndSubordinates: []};
+            console.log(oListView);
+            oListView.sharedTo = {
+              group: ['CGT_' + f.Id],
+              groups: [],
+              channelProgramGroup: [],
+              guestUser: [],
+              channelProgramGroups: [],
+              managerSubordinates: [],
+              managers: [],
+              portalRole: [],
+              portalRoleAndSubordinates: [],
+              queue: [],
+              role: [],
+              roleAndSubordinates: [],
+              roleAndSubordinatesInternal: [],
+              roles: [],
+              rolesAndSubordinates: [],
+              territories: [],
+              territoriesAndSubordinates: [],
+              territory: [],
+              territoryAndSubordinates: [],
+            };
 
             const o2 = await con.metadata.update('ListView', oListView);
-            this.log (o2.success + ':' + o2.fullName);
-            }
+            this.log(o2.success + ':' + o2.fullName);
           }
-
         }
-        await browser.close();
-
-        this.log('Generate Package.xml');
-        const packagexml: Package = {Package: {types: [packagetypesListView, packagetypesGroup], version: '58.0'}};
-        let xmloutput = bxml.build(packagexml) as string;
-        xmloutput = '<?xml version="1.0" encoding="UTF-8"?>' + '\n' + xmloutput;
-        const filename = packagepath;
-        this.log(filename);
-
-        try {
-          writeFileSync(filename,xmloutput);
-        }
-        catch (e) {
-          const err = e as SfError;
-          this.log(err.name + ': Can not write file');
-          this.log(err.message);
-
-        }
-        this.log ('User done:' + f.Username);
-
       }
+      await browser.close();
+
+      this.log('Generate Package.xml');
+      const packagexml: Package = { Package: { types: [packagetypesListView, packagetypesGroup], version: '58.0' } };
+      let xmloutput = bxml.build(packagexml) as string;
+      xmloutput = '<?xml version="1.0" encoding="UTF-8"?>' + '\n' + xmloutput;
+      const filename = packagepath;
+      this.log(filename);
+
+      try {
+        writeFileSync(filename, xmloutput);
+      } catch (e) {
+        const err = e as SfError;
+        this.log(err.name + ': Can not write file');
+        this.log(err.message);
+      }
+      this.log('User done:' + f.Username);
+    }
 
     return {
       path: '/Users/ksmeets/Projects/plugins/listview/src/commands/extract/listview.ts',
     };
   }
 }
-
-

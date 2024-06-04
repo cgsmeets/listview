@@ -1,89 +1,101 @@
+export type cloneParamList = {
+  input: Map<string, cloneParam[]>;
+  ouput: Map<string, cloneParam>;
+}
+export type cloneParam = {
+  sObjectType?: string;
+  userName?: string;
+  userId?: string;
+  listViewId?: string;
+  listViewName?: string;
+  Error?: string;
+};
 
 export type listView = {
-  columns:         Column[];
-  id:              string;
-  orderBy:         OrderBy[];
-  query:           string;
+  columns: Column[];
+  id: string;
+  orderBy: OrderBy[];
+  query: string;
   relatedEntityId: null;
-  scope:           string;
-  scopeEntityId:   null;
-  sobjectType:     string;
-  whereCondition:  WhereCondition;
-}
+  scope: string;
+  scopeEntityId: null;
+  sobjectType: string;
+  whereCondition: WhereCondition;
+};
 
 export type Column = {
-  ascendingLabel:  null | string;
+  ascendingLabel: null | string;
   descendingLabel: null | string;
   fieldNameOrPath: string;
-  hidden:          boolean;
-  label:           string;
-  searchable:      boolean;
-  selectListItem:  string;
-  sortDirection:   null | string;
-  sortIndex:       number | null;
-  sortable:        boolean;
-  type:            string;
-}
+  hidden: boolean;
+  label: string;
+  searchable: boolean;
+  selectListItem: string;
+  sortDirection: null | string;
+  sortIndex: number | null;
+  sortable: boolean;
+  type: string;
+};
 
 export type OrderBy = {
   fieldNameOrPath: string;
-  nullsPosition:   string;
-  sortDirection:   string;
-}
+  nullsPosition: string;
+  sortDirection: string;
+};
 
 export type WhereCondition = {
-  conditions:  WhereConditionCondition[];
+  conditions: WhereConditionCondition[];
   conjunction: string;
-}
+};
 
 export type WhereConditionCondition = {
-  field?:       string;
-  operator?:    string;
-  values?:      string[];
-  conditions?:  ConditionCondition[];
+  field?: string;
+  operator?: string;
+  values?: string[];
+  conditions?: ConditionCondition[];
   conjunction?: string;
-}
+};
 
 export type ConditionCondition = {
-  field:    string;
+  field: string;
   operator: string;
-  values:   string[];
-}
+  values: string[];
+};
 
 export type XmllistView = {
   ListView: ListView;
-}
+};
 export type Package = {
   Package?: PackageClass;
-}
+};
 
 export type PackageClass = {
-  types:   Types[];
+  types: Types[];
   version: string;
-}
+};
 
 export type Types = {
   members: string[];
-  name:    string;
-}
+  name: string;
+};
 
 export type ListView = {
-  fullName:      string;
+  fullName: string;
   booleanFilter?: string;
-  columns:       string[];
-  filterScope:   string;
-  filters?:       Filter[];
-  label:         string;
-  sharedTo:      SharedTo;
-}
+  columns: string[];
+  filterScope: string;
+  filters?: Filter[];
+  label: string;
+  sharedTo: SharedTo;
+};
 export type SharedTo = {
   group: string;
-}
+};
 export type Filter = {
-  field:     string;
+  field: string;
   operation: string;
-  value:     string;
-}
+  value: string;
+};
 
 // ### Salesforce Custom Oject standard fields
 export type SObject = {
@@ -95,21 +107,21 @@ export type SObject = {
   last_modifiedbydate?: number;
   last_modifiedby?: string;
   RecordTypeId?: string;
-}
+};
 
 // ### API query response standard fields
 type attributes = {
   type: string;
   url: string;
-}
+};
 
 // tslint:disable-next-line: class-name
 export type SUser = {
   Username: string;
-} & SObject
+} & SObject;
 
 export type SListView = {
   DeveloperName: string;
   SobjectType: string;
   NamespacePrefix: string;
-} & SObject
+} & SObject;

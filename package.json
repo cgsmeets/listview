@@ -52,6 +52,9 @@
       },
       "extract": {
         "description": "description for extract"
+      },
+      "clone": {
+        "description": "description for clone"
       }
     },
     "flexibleTaxonomy": true
