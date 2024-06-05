@@ -119,14 +119,15 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       let errorMessage: string = 'OK';
       const setListViews: Set<string> = new Set();
 
-      try {
-        this.log('Create Connection for ' + username);
+         this.log('Create Connection for ' + username);
         const org2: Org = await Org.create({
           connection: await Connection.create({
             authInfo,
           }),
         });
         const con2 = org2.getConnection('58.0');
+
+        try {
 
         // Get existing lisviews
         const listviewResult = await con2.query<SListView>('SELECT Id, Name FROM Listview where CreatedbyId = \'' + fParam[0].userId + '\' and sobjecttype = \'' +fParam[0].sObjectType + '\'');
@@ -198,7 +199,10 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
 
       lCloneParamOut.Error = errorMessage;
       scope.ouput.set(fParam2.listViewId as string,lCloneParamOut);
+
       }
+      this.log ('Logout for: ' + username)
+      await con2.logout();
     }
 
     await browser.close();
