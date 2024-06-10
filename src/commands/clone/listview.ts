@@ -178,7 +178,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
         lCloneParamOut.userName = username;
         if (setListViews.has(fParam2.listViewName as string)) {
           errorMessage = 'OK - Duplicate';
-        } else {
+        }  {
           try {
             // go to the listview
             this.log('ListView: ' + fParam2.listViewName + ':' + fParam2.listViewId);
