@@ -1,12 +1,14 @@
+/* DO NOT USE THIS FILE - EXPERIMENTAL */
 /* eslint-disable no-console */
 /* eslint-disable no-await-in-loop */
-import { writeFileSync } from 'node:fs';
+// import { writeFileSync } from 'node:fs';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
-import { AuthInfo, AuthRemover, Connection, Messages, Org, SfError } from '@salesforce/core';
+// import { AuthInfo, AuthRemover, Connection, Messages, Org, SfError } from '@salesforce/core';
+import {  Messages } from '@salesforce/core';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { XMLBuilder } from 'fast-xml-parser';
-import { chromium } from 'playwright';
-import { Package, SListView, SObject, SUser, Types } from '../../common/definition.js';
+// import { XMLBuilder } from 'fast-xml-parser';
+// import { chromium } from 'playwright';
+// import { Package, SListView, SObject, SUser, Types } from '../../common/definition.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('listview', 'extract.listview');
@@ -30,11 +32,13 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
     'target-org': Flags.requiredOrg(),
   };
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   public async run(): Promise<ExtractListviewResult> {
-    const { flags } = await this.parse(ExtractListview);
+    // const { flags } = await this.parse(ExtractListview);
     // Set the object type
-    const objecttype: string = 'Account';
-
+    // const objecttype: string = 'Account';
+    this.log('DO NOT USE THIS COMMAND');
+    /*
     // Package xml only
     const packagexmlonly: boolean = false;
 
@@ -249,7 +253,7 @@ export default class ExtractListview extends SfCommand<ExtractListviewResult> {
       }
       this.log('User done:' + f.Username);
     }
-
+    */
     return {
       path: '/Users/ksmeets/Projects/plugins/listview/src/commands/extract/listview.ts',
     };

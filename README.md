@@ -1,5 +1,7 @@
 # listview
 
+example: ./bin/run.js clone:listview -i /Users/ksmeets/Projects/SDO/listviewclone.csv -n 3MVG9SOw8KERNN0.2nOtUkdNWY45cnwTDz8.PBwwCbu2F4vzAU.YYgnxrKWAMlkL2n3OipOVT7Z7d9A7iDL.w -k /Users/ksmeets/Projects/SDO/domain.key -o p1
+
 prerequisites:
 
 1. Create a connected app with oauth enabled + digital signature (you can use the attached domain.crt and domain.key)
@@ -23,7 +25,10 @@ If listview name already exist -> Skip
 Else Navigate to listview + clone + assign clone name + save
 Any errors recorded on <csv_input_file>.log
 
-NOTE: This function checks if the cloned name already exists. It works best if the new listviews that are loaded and shared via public group have a prefix or suffix (i.e. CGT\_ or \_CGT). The duplicate names check helps to prevent mishaps (i.e. when running multiple times)
+NOTE:
+
+- This function checks if the cloned name already exists - if it does then the output CSV will have a status: OK- Duplicate
+- It works best if the new listviews that are loaded and shared via public group have a prefix or suffix (i.e. CGT\_ or \_CGT). The duplicate names check helps to prevent mishaps (i.e. when running multiple times)
 
 BELOW FOR REFERENCE ONLY
 Extract:listview
