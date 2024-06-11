@@ -88,7 +88,6 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
     // Do some magic below
     this.log('init playwright browser');
     const browser = await chromium.launch();
-    const page = await browser.newPage();
 
     const scope: cloneParamList = { input: new Map<string, cloneParam[]>(), ouput: new Map<string, cloneParam>() };
     const userWhereList: string[] = [];
@@ -186,18 +185,19 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
           setListViews.add(flv.Name as string);
           this.log('Existing Listview: ' + flv.Name);
         }
-
-        this.log(new Date().toISOString() + ' Opening playwright session ' + con2.accessToken);
-        await page.goto(sfDomain + '/secur/frontdoor.jsp?sid=' + con2.accessToken);
-        await page.waitForLoadState('networkidle');
-        await page.setViewportSize({
-          width: 1280,
-          height: 960,
-        });
       } catch (e) {
         const err = e as SfError;
         errorMessage = err.name + ':' + err.message;
       }
+
+      this.log(new Date().toISOString() + ' Opening playwright session ' + con2.accessToken);
+      const page = await browser.newPage();
+      await page.goto(sfDomain + '/secur/frontdoor.jsp?sid=' + con2.accessToken);
+      await page.waitForLoadState('networkidle');
+      await page.setViewportSize({
+        width: 1280,
+        height: 960,
+      });
 
       for (const fParam2 of fParam) {
         const lCloneParamOut: cloneParam = fParam2;
@@ -269,6 +269,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       );
       await page.waitForLoadState('networkidle');
       this.log('Salesforce session Logout complete');
+      await page.close();
 
       this.log(new Date().toISOString() + ' Logout for: ' + username);
       await con2.logout();
