@@ -9,12 +9,11 @@ prerequisites:
 3. Update the client id / secret in the code (to match your new connected app)
 4. Use an administrator account to initially authenticate to the org (I gave it alias p1)
 5. see below for yarn commands (I think yarn run build will do it)
-6. example to execute this code (without linking): ./bin/run.js extract:listview --target-org p1
 
 Clone:listview
 Reads CSV file format: [userid],[sobjecttype],[listviewid],[name_for_cloned_listview]
-Output <csv*input_file>.log: [userid],[listviewid],[name_for_cloned_listview],[username],[status]
-Ouput: Screenshot for every listview: LV*[userid]\_[listviewid].png
+Output <csv\*input\*file>.log: [datetime],[userid],[listviewid],[name_for_cloned_listview],[username],[status]
+Ouput: Screenshot for every listview: <LV*[userid]*[listviewid].png>
 
 Note: Salesforce ID's: USE 18 Character ID Format
 
