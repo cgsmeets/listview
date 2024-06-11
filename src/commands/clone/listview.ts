@@ -263,25 +263,25 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
         scope.ouput.set(fParam2.listViewId as string, lCloneParamOut);
       }
 
-      this.log('Salesforce session Logout');
-      await page.goto(
-        sfDomain + '/secur/logout.jsp'
-      );
-      await page.waitForLoadState('networkidle');
-      this.log('Salesforce session Logout complete');
-      await page.close();
+   //   this.log('Salesforce session Logout');
+   //   await page.goto(
+    //    sfDomain + '/secur/logout.jsp'
+    //  );
+     // await page.waitForLoadState('networkidle');
+     // this.log('Salesforce session Logout complete');
+
+     this.log('Playwright close page')
+     await page.close();
 
       this.log(new Date().toISOString() + ' Logout for: ' + username);
       try {
-            await con2.logout();
+        this.log('Salesforce session Logout');
+        await con2.logout();
+        this.log('Salesforce session Logout complete');
       } catch (e) {
         const err = e as SfError;
-        this.log(err.name);
-        this.log(err.message);
-
+        this.log(err.name + ' ' + err.message);
       }
-
-
     }
 
     await browser.close();
