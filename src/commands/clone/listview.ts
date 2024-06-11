@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 /* eslint-disable no-await-in-loop */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 /*
 import { AuthInfo, AuthRemover, Connection, Messages, Org, SfError } from '@salesforce/core';
@@ -105,15 +105,12 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       }
     }
 
-    /*
-    const mapIdName: Map<string, string> = new Map<string, string>();
-    const userResult = await con.query<SUser>(
-      'SELECT Id, Username FROM User where Id in (' + userWhereList.join(',') + ')'
-    );
-    for (const fUser of userResult.records) {
-      mapIdName.set(fUser.Id as string, fUser.Username);
+    try {
+        writeFileSync(outputPath + 'CloneListViewResult.csv', 'datetime,userid,sobjecttype,listViewId,listViewName,username,status\n');
+    } catch (e) {
+      const err = e as SfError;
+      this.log(err.name + ': Can not write file');
     }
-    */
 
     for (const fParam of scope.input.values()) {
       this.log('Get Username for User Id: ' + fParam[0].userId);
@@ -249,6 +246,16 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
             errorMessage = err.name + ':' + err.message;
             this.log(errorMessage);
           }
+          // datetime, userid,sobjecttype,listViewId,listViewName,username,status
+          appendFileSync(outputPath + 'CloneListViewResult.csv',
+            new Date().toISOString() + ',' +
+            fParam2.userId + ',' +
+            fParam2.sObjectType + ',' +
+            fParam2.listViewId + ',' +
+            fParam2.listViewName + ',' +
+            fParam2.userName + ',' +
+            errorMessage + '\n'
+          );
         }
 
         lCloneParamOut.Error = errorMessage;
@@ -275,34 +282,11 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       }
     }
 
+    this.log('Closing browser session');
     await browser.close();
 
     this.log(new Date().toISOString() + ' Process finished');
-    this.log('Writing output csv to: ' + outputPath + 'CloneListViewResult.csv' );
-
-
-    const outFile: string[] = [];
-    for (const fOut of scope.ouput.values()) {
-      outFile.push(
-        (fOut.userId as string) +
-          ',' +
-          fOut.listViewId +
-          ',' +
-          fOut.listViewName +
-          ',' +
-          fOut.userName +
-          ',' +
-          fOut.Error
-      );
-    }
-    try {
-      writeFileSync(outputPath + 'CloneListViewResult.csv', outFile.join('\n'));
-    } catch (e) {
-      const err = e as SfError;
-      this.log(err.name + ': Can not write file');
-      this.log(err.message);
-      this.log(outFile.join('\n'));
-    }
+    this.log('Check output csv: ' + outputPath + 'CloneListViewResult.csv' );
 
     return {
       path: '/Users/ksmeets/Projects/plugins/listview/src/commands/clone/listview.ts',
