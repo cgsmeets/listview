@@ -216,14 +216,11 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
             // Click on the clone button
             this.log('Locate gear');
             let locator;
-            locator = page.locator(
-              '#brandBand_1 > div > div > div > div > div.slds-page-header--object-home.slds-page-header_joined.slds-page-header_bleed.slds-page-header.slds-shrink-none.test-headerRegion.forceListViewManagerHeader > div:nth-child(2) > div:nth-child(3) > div:nth-child(1) > div > div > button > lightning-primitive-icon:nth-child(2)'
-            );
+            locator = page.locator('[class="test-listViewSettingsMenu slds-m-left_xx-small forceListViewSettingsMenu"]');
             await locator.click();
+
             this.log('Locate clone');
-            locator = page.locator(
-              '#brandBand_1 > div > div > div > div > div.slds-page-header--object-home.slds-page-header_joined.slds-page-header_bleed.slds-page-header.slds-shrink-none.test-headerRegion.forceListViewManagerHeader > div:nth-child(2) > div:nth-child(3) > div:nth-child(1) > div > div > div > ul > li.slds-dropdown__item.listViewSettingsMenuClone > a > span'
-            );
+            locator = page.locator('[class="slds-dropdown__item listViewSettingsMenuClone"]');
             await locator.click();
 
             this.log('Wait for ListView Modal View');
