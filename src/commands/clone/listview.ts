@@ -214,16 +214,19 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
             await page.waitForLoadState('networkidle');
 
             // Click on the clone button
-            this.log('Navigate to gear and click clone');
+            this.log('Locate gear');
             let locator;
             locator = page.locator(
               '#brandBand_1 > div > div > div > div > div.slds-page-header--object-home.slds-page-header_joined.slds-page-header_bleed.slds-page-header.slds-shrink-none.test-headerRegion.forceListViewManagerHeader > div:nth-child(2) > div:nth-child(3) > div:nth-child(1) > div > div > button > lightning-primitive-icon:nth-child(2)'
             );
             await locator.click();
+            this.log('Locate clone');
             locator = page.locator(
               '#brandBand_1 > div > div > div > div > div.slds-page-header--object-home.slds-page-header_joined.slds-page-header_bleed.slds-page-header.slds-shrink-none.test-headerRegion.forceListViewManagerHeader > div:nth-child(2) > div:nth-child(3) > div:nth-child(1) > div > div > div > ul > li.slds-dropdown__item.listViewSettingsMenuClone > a > span'
             );
             await locator.click();
+
+            this.log('Wait for ListView Modal View');
             await page.waitForSelector(
               'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-header.slds-modal__header'
             );
@@ -250,10 +253,14 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
             const screenshotName = 'LV_' + fParam2.userId + '_' + fParam2.listViewId;
             await page.screenshot({ fullPage: true, path: outputPath + screenshotName + '.png' });
 
+            this.log('Salesforce Logout');
+
             await page.goto(
               sfDomain + '/secur/logout.jsp'
             );
             await page.waitForLoadState('networkidle');
+            this.log('Salesforce Logout complete');
+
           } catch (e) {
             const err = e as SfError;
             errorMessage = err.name + ':' + err.message;
