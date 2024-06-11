@@ -236,17 +236,21 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
             await locator.last().fill(fParam2.listViewName as string);
 
             this.log('Locate Save Button');
+            const modal = page.locator('[class="modal-footer slds-modal__footer"]');
+            locator = modal.locator('[type="button"]');
+            await locator.last().click();
          //   await page.waitForSelector(
           //    'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div.DESKTOP.uiModal.open.active > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div'
           ///  );
 
             // Click save
-            this.log('Clicking Save');
-            locator = page.locator('[class="slds-button slds-button--neutral test-confirmButton uiButton--default uiButton--brand uiButton"]');
+           // this.log('Clicking Save');
+           // locator = page.locator('[class="slds-button slds-button--neutral test-confirmButton uiButton--default uiButton--brand uiButton"]');
 //            locator = page.locator(
  //             'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-footer.slds-modal__footer > button.slds-button.slds-button--neutral.test-confirmButton.uiButton--default.uiButton--brand.uiButton'
   //          );
-            await locator.click();
+            //await locator.click();
+
             await page.waitForLoadState('networkidle');
             const screenshotName = 'LV_' + fParam2.userId + '_' + fParam2.listViewId;
             await page.screenshot({ fullPage: true, path: outputPath + screenshotName + '.png' });
@@ -272,9 +276,8 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
      this.log('Playwright close page')
      await page.close();
 
-      this.log(new Date().toISOString() + ' Logout for: ' + username);
       try {
-        this.log('Removing Auth File');
+        this.log(new Date().toISOString() + ' Removing authentication for: ' + username);
         const rm = await AuthRemover.create();
         await rm.removeAuth(username);
       } catch (e) {
