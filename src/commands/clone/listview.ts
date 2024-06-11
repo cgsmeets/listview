@@ -46,8 +46,13 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       required: true,
       exists: true,
     }),
+    'output-csv': Flags.directory({
+      summary: messages.getMessage('flags.output-csv.summary'),
+      char: 'r',
+      required: true,
+      exists: true,
+    }),
   };
-
 
   public async run(): Promise<CloneListviewResult> {
     const { flags } = await this.parse(CloneListview);
@@ -55,14 +60,16 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
 
     // Package location and defaults
     const inputFilePath: string = flags['input-csv']; // '/Users/ksmeets/Projects/SDO/listviewclone.csv';
-    const outputScreenshotPath: string = './';
+    const outputPath: string = flags['output-csv'] +'/';
     // oauth details
     const oauth2OptionsBase = {
       clientId: flags['name'], // '3MVG9SOw8KERNN0.2nOtUkdNWY45cnwTDz8.PBwwCbu2F4vzAU.YYgnxrKWAMlkL2n3OipOVT7Z7d9A7iDL.w',
       privateKeyFile: flags['key-file'] // '/Users/ksmeets/Projects/SDO/domain.key',
     };
-    let authInfo: AuthInfo;
-    this.log('Staring ListView Clone')
+    this.log('Staring ListView Clone');
+    this.log ('input csv: ' + inputFilePath);
+    this.log ('output csv: ' + outputPath);
+
     this.log ('Client Id: ' + flags['name']);
     this.log ('Key file: ' + flags['key-file']);
 
@@ -112,8 +119,10 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
 
       // Login as this user
       this.log('Authenticating User: ' + username);
+      let authInfo: AuthInfo;
+
       try {
-        authInfo = await AuthInfo.create({
+          authInfo = await AuthInfo.create({
           username,
           oauth2Options,
         });
@@ -218,7 +227,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
             await locator.click();
             await page.waitForLoadState('networkidle');
             const screenshotName = 'LV_' + fParam2.userId + '_' + fParam2.listViewId;
-            await page.screenshot({ fullPage: true, path: outputScreenshotPath + screenshotName + '.png' });
+            await page.screenshot({ fullPage: true, path: outputPath + screenshotName + '.png' });
           } catch (e) {
             const err = e as SfError;
             errorMessage = err.name + ':' + err.message;
@@ -250,11 +259,12 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       );
     }
     try {
-      writeFileSync(inputFilePath + '.log', outFile.join('\n'));
+      writeFileSync(outputPath + 'CloneListViewResult.csv', outFile.join('\n'));
     } catch (e) {
       const err = e as SfError;
       this.log(err.name + ': Can not write file');
       this.log(err.message);
+      this.log(outFile.join('\n'));
     }
 
     return {

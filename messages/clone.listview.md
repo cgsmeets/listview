@@ -25,3 +25,7 @@ CSV Input file. userid,sobjecttype,listviewid,name_for_cloned_listview.
 # flags.key-file.summary
 
 Key for referenced connected app.
+
+# flags.output-csv.summary
+
+Output path for result csv and screenshot.

@@ -12,7 +12,7 @@ package-lock.json
 # debug logs
 npm-error.log
 yarn-error.log
-
+run.log
 
 # compile source
 lib
