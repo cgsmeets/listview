@@ -146,8 +146,8 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       let errorMessage: string = 'OK';
       const setListViews: Set<string> = new Set();
 
-      const dtNow = new Date();
-      this.log(dtNow.toISOString() + 'Create Connection for ' + username);
+
+      this.log(new Date().toISOString() + 'Create Connection for ' + username);
       const org2: Org = await Org.create({
         connection: await Connection.create({
           authInfo,
@@ -169,8 +169,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
           this.log('Existing Listview: ' + flv.Name);
         }
 
-        const dtNow2 = new Date();
-        this.log(dtNow2.toISOString() + ' Opening playwright session ' + con2.accessToken);
+        this.log(new Date().toISOString() + ' Opening playwright session ' + con2.accessToken);
         await page.goto(sfDomain + '/secur/frontdoor.jsp?sid=' + con2.accessToken);
         await page.waitForLoadState('networkidle');
         await page.setViewportSize({
@@ -190,7 +189,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
         }  {
           try {
             // go to the listview
-            this.log('ListView: ' + fParam2.listViewName + ':' + fParam2.listViewId);
+            this.log('Navigate to ListView: ' + fParam2.listViewName + ':' + fParam2.listViewId);
             await page.goto(
               sfDomain + '/lightning/o/' + fParam2.sObjectType + '/list?filterName=' + fParam2.listViewId
             );
@@ -211,16 +210,20 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
               'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-header.slds-modal__header'
             );
 
+            this.log('Locate ListView Name Field');
             locator = page.locator('[class="slds-input"]');
+
+            this.log('Clear and Set ListView Name Field');
             await locator.last().clear();
             await locator.last().fill(fParam2.listViewName as string);
 
+            this.log('Locate Save Button');
             await page.waitForSelector(
               'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div.DESKTOP.uiModal.open.active > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div'
             );
 
             // Click save
-            this.log('clicking Save');
+            this.log('Clicking Save');
             locator = page.locator(
               'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-footer.slds-modal__footer > button.slds-button.slds-button--neutral.test-confirmButton.uiButton--default.uiButton--brand.uiButton'
             );
@@ -237,12 +240,16 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
         lCloneParamOut.Error = errorMessage;
         scope.ouput.set(fParam2.listViewId as string, lCloneParamOut);
       }
-      const dtNow3 = new Date();
-      this.log(dtNow3.toISOString() + 'Logout for: ' + username);
+
+      this.log(new Date().toISOString() + ' Logout for: ' + username);
       await con2.logout();
     }
 
     await browser.close();
+
+    this.log(new Date().toISOString() + ' Process finished');
+    this.log('Writing output csv to: ' + outputPath + 'CloneListViewResult.csv' );
+
 
     const outFile: string[] = [];
     for (const fOut of scope.ouput.values()) {
