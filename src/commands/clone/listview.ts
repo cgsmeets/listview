@@ -236,21 +236,20 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
             await locator.last().fill(fParam2.listViewName as string);
 
             this.log('Locate Save Button');
-            await page.waitForSelector(
-              'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div.DESKTOP.uiModal.open.active > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div'
-            );
+         //   await page.waitForSelector(
+          //    'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div.DESKTOP.uiModal.open.active > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div'
+          ///  );
 
             // Click save
             this.log('Clicking Save');
-            locator = page.locator(
-              'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-footer.slds-modal__footer > button.slds-button.slds-button--neutral.test-confirmButton.uiButton--default.uiButton--brand.uiButton'
-            );
+            locator = page.locator('[class="slds-button slds-button--neutral test-confirmButton uiButton--default uiButton--brand uiButton"]');
+//            locator = page.locator(
+ //             'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-footer.slds-modal__footer > button.slds-button.slds-button--neutral.test-confirmButton.uiButton--default.uiButton--brand.uiButton'
+  //          );
             await locator.click();
             await page.waitForLoadState('networkidle');
             const screenshotName = 'LV_' + fParam2.userId + '_' + fParam2.listViewId;
             await page.screenshot({ fullPage: true, path: outputPath + screenshotName + '.png' });
-
-
 
           } catch (e) {
             const err = e as SfError;
@@ -263,25 +262,36 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
         scope.ouput.set(fParam2.listViewId as string, lCloneParamOut);
       }
 
-   //   this.log('Salesforce session Logout');
-   //   await page.goto(
-    //    sfDomain + '/secur/logout.jsp'
-    //  );
-     // await page.waitForLoadState('networkidle');
-     // this.log('Salesforce session Logout complete');
+      this.log('Salesforce session Logout');
+      await page.goto(
+        sfDomain + '/secur/logout.jsp'
+      );
+      await page.waitForLoadState('networkidle');
+      this.log('Salesforce session Logout complete');
 
      this.log('Playwright close page')
      await page.close();
 
       this.log(new Date().toISOString() + ' Logout for: ' + username);
       try {
+        this.log('Removing Auth File');
+        const rm = await AuthRemover.create();
+        await rm.removeAuth(username);
+      } catch (e) {
+        const err = e as SfError;
+        this.log(err.name + ' ' + err.message);
+      }
+
+     /* try {
         this.log('Salesforce session Logout');
+
         await con2.logout();
         this.log('Salesforce session Logout complete');
       } catch (e) {
         const err = e as SfError;
         this.log(err.name + ' ' + err.message);
       }
+        */
     }
 
     await browser.close();
