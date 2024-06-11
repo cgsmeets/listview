@@ -106,6 +106,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       }
     }
 
+    /*
     const mapIdName: Map<string, string> = new Map<string, string>();
     const userResult = await con.query<SUser>(
       'SELECT Id, Username FROM User where Id in (' + userWhereList.join(',') + ')'
@@ -113,10 +114,26 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
     for (const fUser of userResult.records) {
       mapIdName.set(fUser.Id as string, fUser.Username);
     }
+    */
 
     for (const fParam of scope.input.values()) {
       this.log('Get Username for User Id: ' + fParam[0].userId);
-      const username: string = mapIdName.get(fParam[0].userId as string) as string;
+      // const username: string = mapIdName.get(fParam[0].userId as string) as string;
+
+      let username: string;
+      try {
+        const userResult = await con.query<SUser>('SELECT Id, Username FROM User where Id = \'' + fParam[0].userId + '\'');
+        if (userResult.records.length === 0) {
+          this.log('No Username for User Id: ' + fParam[0].userId);
+          break;
+        } else {
+          username = userResult.records[0].Username;
+        }
+      } catch (e) {
+        const err = e as SfError;
+        this.log(err.message);
+        break;
+      }
 
       // Login as this user
       this.log('Authenticating User: ' + username);
@@ -232,6 +249,11 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
             await page.waitForLoadState('networkidle');
             const screenshotName = 'LV_' + fParam2.userId + '_' + fParam2.listViewId;
             await page.screenshot({ fullPage: true, path: outputPath + screenshotName + '.png' });
+
+            await page.goto(
+              sfDomain + '/secur/logout.jsp'
+            );
+            await page.waitForLoadState('networkidle');
           } catch (e) {
             const err = e as SfError;
             errorMessage = err.name + ':' + err.message;
