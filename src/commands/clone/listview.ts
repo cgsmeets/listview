@@ -250,23 +250,25 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
             const screenshotName = 'LV_' + fParam2.userId + '_' + fParam2.listViewId;
             await page.screenshot({ fullPage: true, path: outputPath + screenshotName + '.png' });
 
-            this.log('Salesforce Logout');
 
-            await page.goto(
-              sfDomain + '/secur/logout.jsp'
-            );
-            await page.waitForLoadState('networkidle');
-            this.log('Salesforce Logout complete');
 
           } catch (e) {
             const err = e as SfError;
             errorMessage = err.name + ':' + err.message;
+            this.log(errorMessage);
           }
         }
 
         lCloneParamOut.Error = errorMessage;
         scope.ouput.set(fParam2.listViewId as string, lCloneParamOut);
       }
+
+      this.log('Salesforce session Logout');
+      await page.goto(
+        sfDomain + '/secur/logout.jsp'
+      );
+      await page.waitForLoadState('networkidle');
+      this.log('Salesforce session Logout complete');
 
       this.log(new Date().toISOString() + ' Logout for: ' + username);
       await con2.logout();
