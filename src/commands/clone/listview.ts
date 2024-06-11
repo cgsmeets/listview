@@ -273,17 +273,6 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
         const err = e as SfError;
         this.log(err.name + ' ' + err.message);
       }
-
-     /* try {
-        this.log('Salesforce session Logout');
-
-        await con2.logout();
-        this.log('Salesforce session Logout complete');
-      } catch (e) {
-        const err = e as SfError;
-        this.log(err.name + ' ' + err.message);
-      }
-        */
     }
 
     await browser.close();
