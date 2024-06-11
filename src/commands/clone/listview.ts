@@ -115,6 +115,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
     }
 
     for (const fParam of scope.input.values()) {
+      this.log('Get Username for User Id: ' + fParam[0].userId);
       const username: string = mapIdName.get(fParam[0].userId as string) as string;
 
       // Login as this user

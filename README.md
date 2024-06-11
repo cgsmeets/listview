@@ -1,6 +1,6 @@
 # listview
 
-example: ./bin/run.js clone:listview -i /Users/ksmeets/Projects/SDO/listviewclone.csv -n 3MVG9SOw8KERNN0.2nOtUkdNWY45cnwTDz8.PBwwCbu2F4vzAU.YYgnxrKWAMlkL2n3OipOVT7Z7d9A7iDL.w -k /Users/ksmeets/Projects/SDO/domain.key -o p1
+example: ./bin/run.js clone:listview -i /Users/ksmeets/Projects/SDO/listviewclone.csv -r /Users/ksmeets/Projects/SDO -n 3MVG9SOw8KERNN0.2nOtUkdNWY45cnwTDz8.PBwwCbu2F4vzAU.YYgnxrKWAMlkL2n3OipOVT7Z7d9A7iDL.w -k /Users/ksmeets/Projects/SDO/domain.key -o p1 > run.log
 
 prerequisites:
 
@@ -15,6 +15,8 @@ Clone:listview
 Reads CSV file format: [userid],[sobjecttype],[listviewid],[name_for_cloned_listview]
 Output <csv*input_file>.log: [userid],[listviewid],[name_for_cloned_listview],[username],[status]
 Ouput: Screenshot for every listview: LV*[userid]\_[listviewid].png
+
+Note: Salesforce ID's: USE 18 Character ID Format
 
 query the organization and display details
 For every unique userid on csv
