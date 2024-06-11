@@ -249,7 +249,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
 //            locator = page.locator(
  //             'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-footer.slds-modal__footer > button.slds-button.slds-button--neutral.test-confirmButton.uiButton--default.uiButton--brand.uiButton'
   //          );
-            //await locator.click();
+            // await locator.click();
 
             await page.waitForLoadState('networkidle');
             const screenshotName = 'LV_' + fParam2.userId + '_' + fParam2.listViewId;
