@@ -110,9 +110,9 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
     }
 
     try {
-        const csvResult = 'userid\tsobjecttype\tlistViewId\tlistViewName\tstatus\ttimestamp\tusername\n';
+      //  const csvResult = 'userid\tsobjecttype\tlistViewId\tlistViewName\tstatus\ttimestamp\tusername\n';
 
-        writeFileSync(outputPath + 'CloneListViewResult.csv', csvResult);
+        writeFileSync(outputPath + 'CloneListViewResult.csv', '');
     } catch (e) {
       const err = e as SfError;
       this.log(err.name + ': Can not write file');
