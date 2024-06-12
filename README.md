@@ -13,8 +13,8 @@ prerequisites:
 5. see below for yarn commands (I think yarn run build will do it)
 
 Clone:listview
-Reads CSV file format: [userid],[sobjecttype],[listviewid],[name_for_cloned_listview]
-Output <csv\*input\*file>.log: [datetime],[userid],[listviewid],[name_for_cloned_listview],[username],[status]
+Reads CSV file format: [userid]/t[sobjecttype]/t[listviewid]/t[name_for_cloned_listview]
+Output <csv\*input\*file>.log: [userid]/t[sobjecttype]/t[listviewid]/t[name_for_cloned_listview]/t[status]/t[username]/t[timestamp]
 Ouput: Screenshot for every listview: <LV*[userid]*[listviewid].png>
 
 Note: Salesforce ID's: USE 18 Character ID Format

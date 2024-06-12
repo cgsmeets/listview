@@ -265,8 +265,8 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
             fParam2.listViewId + '\t' +
             fParam2.listViewName + '\t' +
             errorMessage + '\t' +
-            new Date().toISOString() + '\t' +
-            fParam2.userName + '\n'
+            fParam2.userName + '\t' +
+            new Date().toISOString() + '\n'
           )
           );
 
