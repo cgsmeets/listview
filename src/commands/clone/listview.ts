@@ -88,6 +88,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
     // Do some magic below
     this.log('init playwright browser');
     const browser = await chromium.launch();
+    const page = await browser.newPage();
 
     const scope: cloneParamList = { input: new Map<string, cloneParam[]>(), ouput: new Map<string, cloneParam>() };
     const userWhereList: string[] = [];
@@ -111,6 +112,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       const err = e as SfError;
       this.log(err.name + ': Can not write file');
     }
+
 
     for (const fParam of scope.input.values()) {
       this.log('Get Username for User Id: ' + fParam[0].userId);
@@ -180,7 +182,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
         );
         for (const flv of listviewResult.records) {
           setListViews.add(flv.Name as string);
-          this.log('Existing Listview: ' + flv.Name);
+         // this.log('Existing Listview: ' + flv.Name);
         }
       } catch (e) {
         const err = e as SfError;
@@ -188,7 +190,6 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       }
 
       this.log(new Date().toISOString() + ' Opening playwright session ' + con2.accessToken);
-      const page = await browser.newPage();
       await page.goto(sfDomain + '/secur/frontdoor.jsp?sid=' + con2.accessToken);
       await page.waitForLoadState('networkidle');
       await page.setViewportSize({
@@ -204,57 +205,60 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
         }  {
           try {
             // go to the listview
-            this.log('Navigate to ListView: ' + fParam2.listViewName + ':' + fParam2.listViewId);
+            this.log(new Date().toISOString() + ' Navigate to ListView: ' + fParam2.listViewName + ':' + fParam2.listViewId);
             await page.goto(
               sfDomain + '/lightning/o/' + fParam2.sObjectType + '/list?filterName=' + fParam2.listViewId
             );
             await page.waitForLoadState('networkidle');
 
             // Click on the clone button
-            this.log('Locate gear');
+            this.log(new Date().toISOString() + ' Locate gear');
             let locator;
             locator = page.locator('[class="test-listViewSettingsMenu slds-m-left_xx-small forceListViewSettingsMenu"]');
             await locator.click();
 
-            this.log('Locate clone');
+            this.log(new Date().toISOString() + ' Locate clone');
             locator = page.locator('[class="slds-dropdown__item listViewSettingsMenuClone"]');
             await locator.click();
 
-            this.log('Wait for ListView Modal View');
+            this.log(new Date().toISOString() + ' Wait for ListView Modal View');
             await page.waitForSelector(
               'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-header.slds-modal__header'
             );
 
-            this.log('Locate ListView Name Field');
+            this.log(new Date().toISOString() + ' Locate ListView Name Field');
             locator = page.locator('[class="slds-input"]');
 
-            this.log('Clear and Set ListView Name Field');
+            this.log(new Date().toISOString() + ' Clear and Set ListView Name Field');
             await locator.last().clear();
             await locator.last().fill(fParam2.listViewName as string);
 
-            this.log('Locate Save Button');
+            this.log(new Date().toISOString() + ' Locate Save Button');
             const modal = page.locator('[class="modal-footer slds-modal__footer"]');
             locator = modal.locator('[type="button"]');
             await locator.last().click();
 
-            await page.waitForLoadState('networkidle');
-            const screenshotName = 'LV_' + fParam2.userId + '_' + fParam2.listViewId;
-            await page.screenshot({ fullPage: true, path: outputPath + screenshotName + '.png' });
+           // await page.waitForLoadState('networkidle');
+           // const screenshotName = 'LV_' + fParam2.userId + '_' + fParam2.listViewId;
+           // await page.screenshot({ fullPage: true, path: outputPath + screenshotName + '.png' });
 
           } catch (e) {
             const err = e as SfError;
             errorMessage = err.name + ':' + err.message;
             this.log(errorMessage);
+            const screenshotName = 'LV_ERROR_' + fParam2.userId + '_' + fParam2.listViewId;
+            await page.screenshot({ fullPage: true, path: outputPath + screenshotName + '.png' });
           }
           // datetime, userid,sobjecttype,listViewId,listViewName,username,status
           appendFileSync(outputPath + 'CloneListViewResult.csv',
-            new Date().toISOString() + ',' +
-            fParam2.userId + ',' +
-            fParam2.sObjectType + ',' +
-            fParam2.listViewId + ',' +
-            fParam2.listViewName + ',' +
-            fParam2.userName + ',' +
-            errorMessage + '\n'
+            '"' +
+            new Date().toISOString() + '","' +
+            fParam2.userId + '","' +
+            fParam2.sObjectType + '","' +
+            fParam2.listViewId + '","' +
+            fParam2.listViewName + '","' +
+            fParam2.userName + '","' +
+            errorMessage + '"\n'
           );
         }
 
@@ -262,15 +266,15 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
         scope.ouput.set(fParam2.listViewId as string, lCloneParamOut);
       }
 
-      this.log('Salesforce session Logout');
+      this.log(new Date().toISOString() + ' Salesforce session Logout');
       await page.goto(
         sfDomain + '/secur/logout.jsp'
       );
       await page.waitForLoadState('networkidle');
       this.log('Salesforce session Logout complete');
 
-     this.log('Playwright close page')
-     await page.close();
+     // this.log('Playwright close page')
+     // await page.close();
 
       try {
         this.log(new Date().toISOString() + ' Removing authentication for: ' + username);
