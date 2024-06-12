@@ -1,3 +1,4 @@
+/* eslint-disable complexity */
 /* eslint-disable no-console */
 /* eslint-disable no-await-in-loop */
 import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
@@ -12,7 +13,7 @@ import { Package, SListView, SObject, SUser, Types } from '../../common/definiti
 
 import { AuthInfo, AuthRemover, Connection, Messages, Org, SfError } from '@salesforce/core';
 import { chromium } from 'playwright';
-import { cloneParam, cloneParamList, SListView, SObject, SUser } from '../../common/definition.js';
+import { cloneParam, cloneParamList, SObject, SUser } from '../../common/definition.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('listview', 'clone.listview');
@@ -94,9 +95,11 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
     const userWhereList: string[] = [];
     const input = readFileSync(inputFilePath);
     for (const f of input.toString().split('\n')) {
-      const csvIn = f.split(',');
+
+      const csvIn = f.split('\t');
       if (csvIn[0] !== undefined && csvIn[1] !== undefined && csvIn[2] !== undefined) {
-        const lCloneParam = { userId: csvIn[0], sObjectType: csvIn[1], listViewId: csvIn[2], listViewName: csvIn[3] };
+        const lstatus = csvIn[4] ?? '';
+        const lCloneParam = { userId: csvIn[0], sObjectType: csvIn[1], listViewId: csvIn[2], listViewName: csvIn[3].trimEnd(), status: lstatus };
         if (scope.input.has(csvIn[0])) {
           scope.input.get(csvIn[0])?.push(lCloneParam);
         } else {
@@ -107,62 +110,62 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
     }
 
     try {
-        writeFileSync(outputPath + 'CloneListViewResult.csv', 'datetime,userid,sobjecttype,listViewId,listViewName,username,status\n');
+        const csvResult = 'userid\tsobjecttype\tlistViewId\tlistViewName\tstatus\ttimestamp\tusername\n';
+
+        writeFileSync(outputPath + 'CloneListViewResult.csv', csvResult);
     } catch (e) {
       const err = e as SfError;
       this.log(err.name + ': Can not write file');
     }
 
+    let errorMessage = 'OK';
 
     for (const fParam of scope.input.values()) {
       this.log('Get Username for User Id: ' + fParam[0].userId);
-      // const username: string = mapIdName.get(fParam[0].userId as string) as string;
 
-      let username: string;
+      let username: string = 'NONE';
       try {
         const userResult = await con.query<SUser>('SELECT Id, Username FROM User where Id = \'' + fParam[0].userId + '\'');
         if (userResult.records.length === 0) {
           this.log('No Username for User Id: ' + fParam[0].userId);
-          break;
+          errorMessage = 'USER DOES NOT EXIST';
         } else {
           username = userResult.records[0].Username;
         }
       } catch (e) {
         const err = e as SfError;
         this.log(err.message);
-        break;
+        errorMessage = err.message;
       }
+      if (errorMessage === 'OK') {
+        // Login as this user
+        this.log('Authenticating User: ' + username);
+        let authInfo: AuthInfo;
 
-      // Login as this user
-      this.log('Authenticating User: ' + username);
-      let authInfo: AuthInfo;
-
-      try {
+        try {
           authInfo = await AuthInfo.create({
           username,
           oauth2Options,
         });
-      } catch (e) {
-        const err = e as SfError;
-        if (err.name === 'AuthInfoOverwriteError') {
-          this.log('Removing Auth File');
-          const rm = await AuthRemover.create();
-          await rm.removeAuth(username);
+        } catch (e) {
+          const err = e as SfError;
+          if (err.name === 'AuthInfoOverwriteError') {
+            this.log('Removing Auth File');
+            const rm = await AuthRemover.create();
+            await rm.removeAuth(username);
 
-          authInfo = await AuthInfo.create({
-            username,
-            oauth2Options,
-          });
-        } else {
-          this.log('Authentication Issues');
-          this.exit();
+            authInfo = await AuthInfo.create({
+              username,
+              oauth2Options,
+            });
+          } else {
+            this.log('Authentication Issues');
+            this.exit();
+          }
+          await authInfo.save();
         }
-        await authInfo.save();
-      }
-      let errorMessage: string = 'OK';
-      const setListViews: Set<string> = new Set();
 
-
+      // const setListViews: Set<string> = new Set();
       this.log(new Date().toISOString() + 'Create Connection for ' + username);
       const org2: Org = await Org.create({
         connection: await Connection.create({
@@ -171,6 +174,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       });
       const con2 = org2.getConnection('58.0');
 
+      /*
       try {
         // Get existing lisviews
         const listviewResult = await con2.query<SListView>(
@@ -188,24 +192,28 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
         const err = e as SfError;
         errorMessage = err.name + ':' + err.message;
       }
-
-      this.log(new Date().toISOString() + ' Opening playwright session ' + con2.accessToken);
-      await page.goto(sfDomain + '/secur/frontdoor.jsp?sid=' + con2.accessToken);
-      await page.waitForLoadState('networkidle');
-      await page.setViewportSize({
-        width: 1280,
-        height: 960,
-      });
-
+    */
+        try {
+          this.log(new Date().toISOString() + ' Opening playwright session ' + con2.accessToken);
+          await page.goto(sfDomain + '/secur/frontdoor.jsp?sid=' + con2.accessToken);
+          await page.waitForLoadState('networkidle');
+          await page.setViewportSize({
+            width: 1280,
+            height: 960,
+          });
+        } catch (e) {
+          const err = e as SfError;
+          errorMessage = err.name + ':' + err.message;
+        }
+      }
       for (const fParam2 of fParam) {
         const lCloneParamOut: cloneParam = fParam2;
         lCloneParamOut.userName = username;
-        if (setListViews.has(fParam2.listViewName as string)) {
-          errorMessage = 'OK - Duplicate';
-        }  {
+
+        if (errorMessage.startsWith('OK')) {
           try {
             // go to the listview
-            this.log(new Date().toISOString() + ' Navigate to ListView: ' + fParam2.listViewName + ':' + fParam2.listViewId);
+            this.log(new Date().toISOString() + ' Navigate to ListView: ' + fParam2.sObjectType + ':' + fParam2.listViewName + ':' + fParam2.listViewId);
             await page.goto(
               sfDomain + '/lightning/o/' + fParam2.sObjectType + '/list?filterName=' + fParam2.listViewId
             );
@@ -249,18 +257,19 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
             const screenshotName = 'LV_ERROR_' + fParam2.userId + '_' + fParam2.listViewId;
             await page.screenshot({ fullPage: true, path: outputPath + screenshotName + '.png' });
           }
-          // datetime, userid,sobjecttype,listViewId,listViewName,username,status
-          appendFileSync(outputPath + 'CloneListViewResult.csv',
-            '"' +
-            new Date().toISOString() + '","' +
-            fParam2.userId + '","' +
-            fParam2.sObjectType + '","' +
-            fParam2.listViewId + '","' +
-            fParam2.listViewName + '","' +
-            fParam2.userName + '","' +
-            errorMessage + '"\n'
-          );
         }
+          // datetime, userid,sobjecttype,listViewId,listViewName,username,status
+          appendFileSync(outputPath + 'CloneListViewResult.csv', (
+            fParam2.userId + '\t' +
+            fParam2.sObjectType + '\t' +
+            fParam2.listViewId + '\t' +
+            fParam2.listViewName + '\t' +
+            errorMessage + '\t' +
+            new Date().toISOString() + '\t' +
+            fParam2.userName + '\n'
+          )
+          );
+
 
         lCloneParamOut.Error = errorMessage;
         scope.ouput.set(fParam2.listViewId as string, lCloneParamOut);

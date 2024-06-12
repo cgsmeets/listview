@@ -2,6 +2,8 @@
 
 example: ./bin/run.js clone:listview -i /Users/ksmeets/Projects/SDO/listviewclone.csv -r /Users/ksmeets/Projects/SDO -n 3MVG9SOw8KERNN0.2nOtUkdNWY45cnwTDz8.PBwwCbu2F4vzAU.YYgnxrKWAMlkL2n3OipOVT7Z7d9A7iDL.w -k /Users/ksmeets/Projects/SDO/domain.key -o p1 > run.log
 
+./bin/run.js clone:listview -i /Users/ksmeets/Projects/CGAMS/input/listviewclone2.csv -r /Users/ksmeets/Projects/CGAMS/output -n 3MVG9fdJGowvdgN0tzA5aHhCtwJfB8jhZrogdFw0ooE_lLhaT0I.PoBdMOAEGIzJnI3pZHU57l7AV1MCUgtlH -k /Users/ksmeets/Projects/CGAMS/private_key_sf2.pem -o p9
+
 prerequisites:
 
 1. Create a connected app with oauth enabled + digital signature (you can use the attached domain.crt and domain.key)
