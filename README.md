@@ -6,16 +6,30 @@ example: ./bin/run.js clone:listview -i /Users/ksmeets/Projects/SDO/listviewclon
 
 prerequisites:
 
-1. Create a connected app with oauth enabled + digital signature (you can use the attached domain.crt and domain.key)
+1. Create a connected app with oauth enabled + digital signature (you can use the attached domain.crt and domain.key for testing)
 2. Move the domain.key into a directory where it can be found (update the path in the code)
-3. Update the client id / secret in the code (to match your new connected app)
+3. Update the client id / secret (to match your new connected app)
 4. Use an administrator account to initially authenticate to the org (I gave it alias p1)
 5. see below for yarn commands (I think yarn run build will do it)
+6. On every execution it will check for the 3 output files:
+
+- CloneListViewResult.csv
+- CloneListViewResult.log
+- CloneListViewRetry.csv
+  If the file exists it will append \_0,\_1,\_2 etc. to the filename
 
 Clone:listview
-Reads CSV file format: [userid]/t[sobjecttype]/t[listviewid]/t[name_for_cloned_listview]
-Output <csv\*input\*file>.log: [userid]/t[sobjecttype]/t[listviewid]/t[name_for_cloned_listview]/t[status]/t[username]/t[timestamp]
-Ouput: Screenshot for every listview: <LV*[userid]*[listviewid].png>
+CSV Input : [userid]/t[sobjecttype]/t[listviewid]/t[name_for_cloned_listview]
+CSV Output : [userid]/t[sobjecttype]/t[listviewid]/t[name_for_cloned_listview]/t[status]/t[username]/t[timestamp]
+Retry Ouput : [userid]/t[sobjecttype]/t[listviewid]/t[name_for_cloned_listview]/t[status]/t[username]/t[timestamp]
+Error Ouput: Screenshot for every listview: <LV*ERROR*[userid]\*[listviewid].png>
+
+To implement a retry loop use this (pseudo):
+
+const res = clone:listview -i input.csv
+while (!res.done) {
+clone:listview -i res.path
+}
 
 Note: Salesforce ID's: USE 18 Character ID Format
 

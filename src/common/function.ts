@@ -164,7 +164,7 @@ export default class Function {
     try {
       const msg = new Date().toISOString() + ' ' + message;
       console.log (msg);
-    appendFileSync(this.outputLogFilePath, msg + '\n');
+      appendFileSync(this.outputLogFilePath, msg + '\n');
     } catch (e) {
       const err = e as Error;
       console.log (err.name + ':' + err.message);
