@@ -11,6 +11,7 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('listview', 'clone.listview');
 
 export type CloneListviewResult = {
+  done: boolean;
   path: string;
 };
 
@@ -83,8 +84,6 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       common.Log('Can not read input CSV');
       this.exit();
     }
-    let iListViewCount = 1;
-    const iListViewTotal = scope.input.size;
 
     common.Log('Init output CSV file and log');
     if (!common.InitResultFile()) this.exit();
@@ -183,10 +182,9 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
             await page.screenshot({ fullPage: true, path: common.outputPath + screenshotName + '.png' });
           }
         }
-        common.Log('ListView count: ' + iListViewCount + '/' + iListViewTotal);
-        iListViewCount++;
+
         // datetime, userid,sobjecttype,listViewId,listViewName,username,status
-        common.WriteResultFile((
+        common.WriteResultFile(errorMessage, (
           fParam2.userId + '\t' +
           fParam2.sObjectType + '\t' +
           fParam2.listViewId + '\t' +
@@ -222,9 +220,12 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
 
     common.Log('Process finished');
     common.Log('Check output csv: ' + common.outputFilePath);
+    common.Log('Retry output csv: ' + common.outputRetryFilePath);
+    common.Log('Done flag: ' + (common.iListViewErrorCount === 0));
 
     return {
-      path: common.outputFilePath,
+      done: (common.iListViewErrorCount === 0),
+      path: common.outputRetryFilePath,
     };
   }
 }

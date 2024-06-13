@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-console */
-import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
+import { existsSync, renameSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs';
 import { AuthInfo, AuthRemover, Connection, SfError } from '@salesforce/core';
 import { cloneParam, cloneParamList, SUser } from './definition.js';
 
@@ -9,17 +9,26 @@ export default class Function {
   public sfDomain: string;
   public outputPath: string;
   public outputFilePath: string;
+  public iListViewErrorCount;
+  public outputRetryFilePath: string;
   private inputFilePath: string;
   private outputLogFilePath: string;
   private con: Connection;
   private oauth2Options;
+  private iListViewCount;
+  private iListViewTotal;
 
   public constructor(inputFilePath: string, outputPath: string, clientId: string, keyFilePath: string, con: Connection) {
     this.outputPath = outputPath + '/';
     this.inputFilePath = inputFilePath;
     this.outputFilePath = outputPath + '/CloneListViewResult.csv';
+    this.outputRetryFilePath = outputPath + '/CloneListViewRetry.csv';
     this.outputLogFilePath = outputPath + '/CloneListViewResult.log';
     this.con = con;
+    this.iListViewCount = 0;
+    this.iListViewErrorCount = 0;
+    this.iListViewTotal = 0;
+
     this.sfDomain = con.instanceUrl;
     // oauth details
     const oauth2OptionsBase = {
@@ -50,6 +59,7 @@ export default class Function {
           userWhereList.push("'" + csvIn[0] + "'");
         }
       }
+      this.iListViewTotal = scope.input.size;
     }
     catch (e) {
       const err = e as Error;
@@ -63,8 +73,26 @@ export default class Function {
   public InitResultFile(): boolean {
     try {
         //  const csvResult = 'userid\tsobjecttype\tlistViewId\tlistViewName\tstatus\ttimestamp\tusername\n';
+
+        let iSuffix = 0;
+        if (existsSync(this.outputFilePath)) {
+          while (existsSync(this.outputFilePath+'_'+iSuffix)) iSuffix++;
+          renameSync(this.outputFilePath, this.outputFilePath+'_'+iSuffix);
+        }
+        iSuffix = 0;
+        if (existsSync(this.outputRetryFilePath)) {
+          while (existsSync(this.outputFilePath+'_'+iSuffix)) iSuffix++;
+          renameSync(this.outputRetryFilePath, this.outputRetryFilePath+'_'+iSuffix);
+        }
+        iSuffix = 0;
+        if (existsSync(this.outputLogFilePath)) {
+          while (existsSync(this.outputLogFilePath+'_'+iSuffix)) iSuffix++;
+          renameSync(this.outputLogFilePath, this.outputLogFilePath+'_'+iSuffix);
+        }
+
         writeFileSync(this.outputFilePath, '');
-        writeFileSync(this.outputPath + '/CloneListView.log', '');
+        writeFileSync(this.outputRetryFilePath, '');
+        writeFileSync(this.outputLogFilePath, '');
 
         return true;
     } catch (e)  {
@@ -73,9 +101,21 @@ export default class Function {
       return false;
     }
   }
-  public WriteResultFile(message: string): void {
+  public WriteResultFile(errormessage: string, message: string): void {
     try {
-      appendFileSync(this.outputFilePath, message);
+      if (errormessage === 'OK') {
+        appendFileSync(this.outputFilePath, message);
+        this.iListViewCount++;
+      } else {
+       appendFileSync(this.outputRetryFilePath, message);
+       this.iListViewErrorCount++;
+      }
+      const msg = 'ListView Clone Status TOTAL|EXEC|OK|KO: ' +
+          this.iListViewTotal + '|' +
+          (this.iListViewCount + this.iListViewErrorCount) + '|' +
+          this.iListViewCount + '|' +
+          this.iListViewErrorCount;
+      this.Log(msg);
     } catch (e) {
       const err = e as Error;
       console.log (err.message);
@@ -151,3 +191,5 @@ export default class Function {
       }
     */
 }
+
+
