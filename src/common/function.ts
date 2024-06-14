@@ -17,8 +17,9 @@ export default class Function {
   private oauth2Options;
   private iListViewCount;
   private iListViewTotal;
+  private jsonOutput: boolean;
 
-  public constructor(inputFilePath: string, outputPath: string, clientId: string, keyFilePath: string, con: Connection) {
+  public constructor(inputFilePath: string, outputPath: string, clientId: string, keyFilePath: string, con: Connection, jsonOutput: boolean) {
     this.outputPath = outputPath + '/';
     this.inputFilePath = inputFilePath;
     this.outputFilePath = outputPath + '/CloneListViewResult.csv';
@@ -28,6 +29,7 @@ export default class Function {
     this.iListViewCount = 0;
     this.iListViewErrorCount = 0;
     this.iListViewTotal = 0;
+    this.jsonOutput = jsonOutput;
 
     this.sfDomain = con.instanceUrl;
     // oauth details
@@ -163,7 +165,7 @@ export default class Function {
   public Log(message: string): void {
     try {
       const msg = new Date().toISOString() + ' ' + message;
-      console.log (msg);
+      if (!this.jsonOutput) console.log (msg);
       appendFileSync(this.outputLogFilePath, msg + '\n');
     } catch (e) {
       const err = e as Error;

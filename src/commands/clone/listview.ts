@@ -57,9 +57,8 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       flags['output-csv'],
       flags['name'],
       flags['key-file'],
-      con
+      con, flags.json as boolean
     );
-
     // Package location and defaults
 
     common.Log('Staring ListView Clone');
@@ -81,8 +80,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
     common.Log('Read input CSV file');
     const scope = common.ReadCSV();
     if (scope.input.size === 0) {
-      common.Log('Can not read input CSV');
-      this.exit();
+      common.Log('input CSV empty');
     }
 
     common.Log('Init output CSV file and log');
