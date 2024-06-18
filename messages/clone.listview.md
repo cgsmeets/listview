@@ -29,3 +29,11 @@ Key for referenced connected app.
 # flags.output-csv.summary
 
 Output path for result csv and screenshot.
+
+# flags.instance.summary
+
+Instance URL.
+
+# flags.instance.summary
+
+Salesforce instance URL.

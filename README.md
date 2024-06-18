@@ -1,8 +1,8 @@
 # listview
 
-example: ./bin/run.js clone:listview -i /Users/ksmeets/Projects/SDO/listviewclone.csv -r /Users/ksmeets/Projects/SDO -n 3MVG9SOw8KERNN0.2nOtUkdNWY45cnwTDz8.PBwwCbu2F4vzAU.YYgnxrKWAMlkL2n3OipOVT7Z7d9A7iDL.w -k /Users/ksmeets/Projects/SDO/domain.key -o p1 > run.log
+example: ./bin/run.js clone:listview -i /Users/ksmeets/Projects/SDO/listviewclone.csv -r /Users/ksmeets/Projects/SDO -n 3MVG9SOw8KERNN0.2nOtUkdNWY45cnwTDz8.PBwwCbu2F4vzAU.YYgnxrKWAMlkL2n3OipOVT7Z7d9A7iDL.w -k /Users/ksmeets/Projects/SDO/domain.key -u https://login.salesforce.com
 
-./bin/run.js clone:listview -i /Users/ksmeets/Projects/CGAMS/input/listviewclone2.csv -r /Users/ksmeets/Projects/CGAMS/output -n 3MVG9fdJGowvdgN0tzA5aHhCtwJfB8jhZrogdFw0ooE_lLhaT0I.PoBdMOAEGIzJnI3pZHU57l7AV1MCUgtlH -k /Users/ksmeets/Projects/CGAMS/private_key_sf2.pem -o p9
+./bin/run.js clone:listview -i /Users/ksmeets/Projects/CGAMS/input/listviewclone2.csv -r /Users/ksmeets/Projects/CGAMS/output -n 3MVG9fdJGowvdgN0tzA5aHhCtwJfB8jhZrogdFw0ooE_lLhaT0I.PoBdMOAEGIzJnI3pZHU57l7AV1MCUgtlH -k /Users/ksmeets/Projects/CGAMS/private_key_sf2.pem -u https://test.salesforce.com
 
 prerequisites:
 
@@ -19,17 +19,25 @@ prerequisites:
   If the file exists it will append \_0,\_1,\_2 etc. to the filename
 
 Clone:listview
-CSV Input : [userid]/t[sobjecttype]/t[listviewid]/t[name_for_cloned_listview]
-CSV Output : [userid]/t[sobjecttype]/t[listviewid]/t[name_for_cloned_listview]/t[status]/t[username]/t[timestamp]
-Retry Ouput : [userid]/t[sobjecttype]/t[listviewid]/t[name_for_cloned_listview]/t[status]/t[username]/t[timestamp]
+CSV Input : [username]/t[sobjecttype]/t[listviewid]/t[name_for_cloned_listview]
+CSV Output : [username]/t[sobjecttype]/t[listviewid]/t[name_for_cloned_listview]/t[status]/t[timestamp]
+Retry Ouput : [username]/t[sobjecttype]/t[listviewid]/t[name_for_cloned_listview]/t[status]/t[timestamp]
 Error Ouput: Screenshot for every listview: <LV*ERROR*[userid]\*[listviewid].png>
 
-To implement a retry loop use this (pseudo):
+To implement a retry loop use this (bash):
 
-const res = clone:listview -i input.csv
-while (!res.done) {
-clone:listview -i res.path
-}
+#!/bin/bash
+INPUTCSV=“/input/CloneListView.csv”
+while :
+do
+RESULT=$(sf clone:listview <bunch of other parameters> --json | jq ‘.result’)
+INPUTCSV=$(echo $RESULT | jq ‘.path’)
+READY=$(echo $RESULT | jq ‘.done’)
+if [ $READY ]
+then
+break
+fi
+done
 
 Note: Salesforce ID's: USE 18 Character ID Format
 
