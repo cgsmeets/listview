@@ -2,16 +2,17 @@
 
 example: ./bin/run.js clone:listview -i /Users/ksmeets/Projects/SDO/listviewclone.csv -r /Users/ksmeets/Projects/SDO -n 3MVG9SOw8KERNN0.2nOtUkdNWY45cnwTDz8.PBwwCbu2F4vzAU.YYgnxrKWAMlkL2n3OipOVT7Z7d9A7iDL.w -k /Users/ksmeets/Projects/SDO/domain.key -u https://login.salesforce.com -s true
 
-./bin/run.js clone:listview -i /Users/ksmeets/Projects/CGAMS/input/listviewclone2.csv -r /Users/ksmeets/Projects/CGAMS/output -n 3MVG9fdJGowvdgN0tzA5aHhCtwJfB8jhZrogdFw0ooE_lLhaT0I.PoBdMOAEGIzJnI3pZHU57l7AV1MCUgtlH -k /Users/ksmeets/Projects/CGAMS/private_key_sf2.pem -u https://test.salesforce.com
+./bin/run.js clone:listview -i /Users/ksmeets/Projects/CGAMS/input/listviewclone2.csv -r /Users/ksmeets/Projects/CGAMS/output -n 3MVG9fdJGowvdgN0tzA5aHhCtwJfB8jhZrogdFw0ooE_lLhaT0I.PoBdMOAEGIzJnI3pZHU57l7AV1MCUgtlH -k /Users/ksmeets/Projects/CGAMS/private_key_sf2.pem -u <mydomain.my.salesforce.com>
 
 prerequisites:
 
-1. Create a connected app with oauth enabled + digital signature (you can use the attached domain.crt and domain.key for testing)
-2. Move the domain.key into a directory where it can be found (update the path in the code)
-3. Update the client id / secret (to match your new connected app)
-4. Use an administrator account to initially authenticate to the org (I gave it alias p1)
-5. see below for yarn commands (I think yarn run build will do it)
-6. On every execution it will check for the 3 output files:
+1. Use the mydomain url as an input parameter when using a sandbox (https://login.salesforce.com work on production - but https://test.salesforce does not work on sandboxes for JWT login)
+2. Create a connected app with oauth enabled + digital signature (you can use the attached domain.crt and domain.key for testing)
+3. Move the domain.key into a directory where it can be found (update the path in the code)
+4. Update the client id / secret (to match your new connected app)
+5. Use an administrator account to initially authenticate to the org (I gave it alias p1)
+6. see below for yarn commands (I think yarn run build will do it)
+7. On every execution it will check for the 3 output files:
 
 - CloneListViewResult.csv
 - CloneListViewResult.log
