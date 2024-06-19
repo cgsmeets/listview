@@ -140,8 +140,10 @@ export default class Function {
           username,
           oauth2Options: this.oauth2Options,
         });
+        await authInfo.save();
+      } else {
+        this.Log ('Authentication issue: ' + err.name + ':' + err.message);
       }
-      await authInfo.save();
     }
     return authInfo;
   }

@@ -133,6 +133,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
         } catch (e) {
           const err = e as SfError;
           errorMessage = err.name;
+          common.Log('LOGIN FAILED: ' + err.name + ':' + err.message);
           username = 'LOGIN FAILED';
         }
       } else {
@@ -227,15 +228,15 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
         await page.goto(common.sfDomain + '/secur/logout.jsp');
         // await page.waitForLoadState('networkidle');
         common.Log('Salesforce session Logout complete');
-      }
 
-      try {
-        common.Log('Removing authentication for: ' + username);
-        const rm = await AuthRemover.create();
-        await rm.removeAuth(username);
-      } catch (e) {
-        const err = e as SfError;
-        common.Log(err.name + ' ' + err.message);
+        try {
+          common.Log('Removing authentication for: ' + username);
+          const rm = await AuthRemover.create();
+          await rm.removeAuth(username);
+        } catch (e) {
+          const err = e as SfError;
+          common.Log(err.name + ' ' + err.message);
+        }
       }
     }
 
