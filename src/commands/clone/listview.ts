@@ -5,6 +5,7 @@ import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { AuthRemover, Connection, Messages, Org, SfError } from '@salesforce/core';
 import { chromium } from 'playwright';
 import Function from '../../common/function.js';
+import { SListView } from '../../common/definition.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('listview', 'clone.listview');
@@ -49,11 +50,15 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       char: 'u',
       required: true,
     })(),
+    'skip-duplicate': Flags.boolean({
+      summary: messages.getMessage('flags.skip-duplicate.summary'),
+      char: 's',
+      default: false
+    }),
   };
 
   public async run(): Promise<CloneListviewResult> {
     const { flags } = await this.parse(CloneListview);
-    // const con = flags['target-org'].getConnection('58.0');
 
     const common = new Function(
       flags['input-csv'],
@@ -65,7 +70,8 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
     );
     // Package location and defaults
 
-    common.Log('Staring ListView Clone');
+    common.Log('Starting ListView Clone');
+    common.Log('Skipping Duplicates: ' + flags['skip-duplicate']);
     common.Log('input csv: ' + flags['input-csv']);
     common.Log('output path: ' + flags['output-csv']);
     common.Log('Client Id: ' + flags['name']);
@@ -86,6 +92,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
     if (!common.InitResultFile()) this.exit();
 
     let errorMessage = 'OK';
+    const setListView: Set<string> = new Set<string>();
 
     for (const fParam of scope.input.values()) {
       let username = fParam[0].userName as string;
@@ -109,6 +116,13 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
           const con2 = org2.getConnection('58.0');
           common.sfDomain = con2.instanceUrl;
 
+          const lsoLV = con2.query<SListView>(
+            "select Name, SobjectType from ListView where createdbyid='" + con2.userInfo?.id + "'"
+          );
+          for (const f of lsoLV.records) {
+            setListView.add(f.SobjectType + f.Name);
+          }
+
           common.Log('Playwright salesforce login: ' + username);
           await page.goto(common.sfDomain + '/secur/frontdoor.jsp?sid=' + con2.accessToken);
           await page.waitForLoadState('networkidle');
@@ -130,45 +144,57 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       for (const fParam2 of fParam) {
         if (username !== 'LOGIN FAILED') {
           try {
-            errorMessage = 'OK';
+            if (flags['skip-duplicate'] && setListView.has(fParam2.sObjectType + ':' + fParam2.listViewName)) {
+              errorMessage = 'EXISTS';
+              common.Log(
+                'Skipping Existing ListView: ' +
+                  fParam2.sObjectType +
+                  ':' +
+                  fParam2.listViewName +
+                  ':' +
+                  fParam2.listViewId
+              );
+            } else {
+              errorMessage = 'OK';
 
-            // go to the listview
-            common.Log(
-              'Navigate to ListView: ' + fParam2.sObjectType + ':' + fParam2.listViewName + ':' + fParam2.listViewId
-            );
-            await page.goto(
-              common.sfDomain + '/lightning/o/' + fParam2.sObjectType + '/list?filterName=' + fParam2.listViewId
-            );
-            await page.waitForLoadState('networkidle');
+              // go to the listview
+              common.Log(
+                'Navigate to ListView: ' + fParam2.sObjectType + ':' + fParam2.listViewName + ':' + fParam2.listViewId
+              );
+              await page.goto(
+                common.sfDomain + '/lightning/o/' + fParam2.sObjectType + '/list?filterName=' + fParam2.listViewId
+              );
+              await page.waitForLoadState('networkidle');
 
-            // Click on the clone button
-            common.Log('Locate gear');
-            let locator;
-            locator = page.locator(
-              '[class="test-listViewSettingsMenu slds-m-left_xx-small forceListViewSettingsMenu"]'
-            );
-            await locator.click();
+              // Click on the clone button
+              common.Log('Locate gear');
+              let locator;
+              locator = page.locator(
+                '[class="test-listViewSettingsMenu slds-m-left_xx-small forceListViewSettingsMenu"]'
+              );
+              await locator.click();
 
-            common.Log('Locate clone');
-            locator = page.locator('[class="slds-dropdown__item listViewSettingsMenuClone"]');
-            await locator.click();
+              common.Log('Locate clone');
+              locator = page.locator('[class="slds-dropdown__item listViewSettingsMenuClone"]');
+              await locator.click();
 
-            common.Log('Wait for ListView Modal View');
-            await page.waitForSelector(
-              'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-header.slds-modal__header'
-            );
+              common.Log('Wait for ListView Modal View');
+              await page.waitForSelector(
+                'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-header.slds-modal__header'
+              );
 
-            common.Log('Locate ListView Name Field');
-            locator = page.locator('[class="slds-input"]');
+              common.Log('Locate ListView Name Field');
+              locator = page.locator('[class="slds-input"]');
 
-            common.Log('Clear and Set ListView Name Field');
-            await locator.last().clear();
-            await locator.last().fill(fParam2.listViewName as string);
+              common.Log('Clear and Set ListView Name Field');
+              await locator.last().clear();
+              await locator.last().fill(fParam2.listViewName as string);
 
-            common.Log('Locate Save Button');
-            const modal = page.locator('[class="modal-footer slds-modal__footer"]');
-            locator = modal.locator('[type="button"]');
-            await locator.last().click();
+              common.Log('Locate Save Button');
+              const modal = page.locator('[class="modal-footer slds-modal__footer"]');
+              locator = modal.locator('[type="button"]');
+              await locator.last().click();
+            }
           } catch (e) {
             const err = e as SfError;
             errorMessage = err.name;

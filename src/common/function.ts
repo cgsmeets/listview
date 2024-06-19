@@ -120,6 +120,8 @@ export default class Function {
     }
   }
 
+
+
   public async CreateAuthentication(username: string): Promise<AuthInfo> {
     let authInfo!: AuthInfo;
 
