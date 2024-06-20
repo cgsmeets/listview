@@ -70,6 +70,10 @@ export default class Function {
     return scope;
   }
 
+  public async Sleep(ms: number): Promise<void> {
+    await new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   public async ProcessUserListView (Param: cloneParam[], bSkip: boolean): Promise<string> {
 
     this.Log('init playwright browser');
