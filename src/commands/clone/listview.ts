@@ -4,8 +4,8 @@
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { AuthRemover, Connection, Messages, Org, SfError } from '@salesforce/core';
 import { chromium } from 'playwright';
-import { SObject } from '../../common/definition.js';
 import Function from '../../common/function.js';
+import { SListView } from '../../common/definition.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('listview', 'clone.listview');
@@ -27,7 +27,6 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       char: 'n',
       required: true,
     }),
-    'target-org': Flags.requiredOrg(),
     'input-csv': Flags.file({
       summary: messages.getMessage('flags.input-csv.summary'),
       char: 'i',
@@ -46,31 +45,37 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       required: true,
       exists: true,
     }),
+    instance: Flags.custom({
+      summary: messages.getMessage('flags.instance.summary'),
+      char: 'u',
+      required: true,
+    })(),
+    'skip-duplicate': Flags.boolean({
+      summary: messages.getMessage('flags.skip-duplicate.summary'),
+      char: 's',
+      default: false
+    }),
   };
 
   public async run(): Promise<CloneListviewResult> {
     const { flags } = await this.parse(CloneListview);
-    const con = flags['target-org'].getConnection('58.0');
 
     const common = new Function(
       flags['input-csv'],
       flags['output-csv'],
       flags['name'],
       flags['key-file'],
-      con, flags.json as boolean
+      flags.json as boolean,
+      flags['instance']
     );
     // Package location and defaults
 
-    common.Log('Staring ListView Clone');
+    common.Log('Starting ListView Clone');
+    common.Log('Skipping Duplicates: ' + flags['skip-duplicate']);
     common.Log('input csv: ' + flags['input-csv']);
     common.Log('output path: ' + flags['output-csv']);
     common.Log('Client Id: ' + flags['name']);
     common.Log('Key file: ' + flags['key-file']);
-
-    const org = await con.query<SObject>(
-      'SELECT InstanceName, NamespacePrefix, OrganizationType, IsSandbox, Id, Name FROM Organization'
-    );
-    common.Log('Org Id: ' + org.records[0].Id);
 
     // Do some magic below
     common.Log('init playwright browser');
@@ -87,10 +92,10 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
     if (!common.InitResultFile()) this.exit();
 
     let errorMessage = 'OK';
+    const setListView: Set<string> = new Set<string>();
 
     for (const fParam of scope.input.values()) {
-      common.Log('Get Username for User Id: ' + fParam[0].userId);
-      let username = await common.GetUserName(fParam[0].userId as string);
+      let username = fParam[0].userName as string;
       common.Log('Username: ' + username);
 
       if (username !== 'NOT FOUND') {
@@ -109,6 +114,14 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
             }),
           });
           const con2 = org2.getConnection('58.0');
+          common.sfDomain = con2.instanceUrl;
+
+          const lsoLV = con2.query<SListView>(
+            "select Name, SobjectType from ListView where createdbyid='" + con2.userInfo?.id + "'"
+          );
+          for (const f of lsoLV.records) {
+            setListView.add(f.SobjectType + f.Name);
+          }
 
           common.Log('Playwright salesforce login: ' + username);
           await page.goto(common.sfDomain + '/secur/frontdoor.jsp?sid=' + con2.accessToken);
@@ -120,6 +133,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
         } catch (e) {
           const err = e as SfError;
           errorMessage = err.name;
+          common.Log('LOGIN FAILED: ' + err.name + ':' + err.message);
           username = 'LOGIN FAILED';
         }
       } else {
@@ -129,81 +143,93 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
 
       // Go to every listview and clone it
       for (const fParam2 of fParam) {
-
         if (username !== 'LOGIN FAILED') {
           try {
-            errorMessage = 'OK';
+            if (flags['skip-duplicate'] && setListView.has(fParam2.sObjectType + ':' + fParam2.listViewName)) {
+              errorMessage = 'EXISTS';
+              common.Log(
+                'Skipping Existing ListView: ' +
+                  fParam2.sObjectType +
+                  ':' +
+                  fParam2.listViewName +
+                  ':' +
+                  fParam2.listViewId
+              );
+            } else {
+              errorMessage = 'OK';
 
-            // go to the listview
-            common.Log('Navigate to ListView: ' + fParam2.sObjectType + ':' + fParam2.listViewName + ':' + fParam2.listViewId);
-            await page.goto(
-              common.sfDomain + '/lightning/o/' + fParam2.sObjectType + '/list?filterName=' + fParam2.listViewId
-            );
-            await page.waitForLoadState('networkidle');
+              // go to the listview
+              common.Log(
+                'Navigate to ListView: ' + fParam2.sObjectType + ':' + fParam2.listViewName + ':' + fParam2.listViewId
+              );
+              await page.goto(
+                common.sfDomain + '/lightning/o/' + fParam2.sObjectType + '/list?filterName=' + fParam2.listViewId
+              );
+              await page.waitForLoadState('networkidle');
 
-            // Click on the clone button
-            common.Log('Locate gear');
-            let locator;
-            locator = page.locator('[class="test-listViewSettingsMenu slds-m-left_xx-small forceListViewSettingsMenu"]');
-            await locator.click();
+              // Click on the clone button
+              common.Log('Locate gear');
+              let locator;
+              locator = page.locator(
+                '[class="test-listViewSettingsMenu slds-m-left_xx-small forceListViewSettingsMenu"]'
+              );
+              await locator.click();
 
-            common.Log('Locate clone');
-            locator = page.locator('[class="slds-dropdown__item listViewSettingsMenuClone"]');
-            await locator.click();
+              common.Log('Locate clone');
+              locator = page.locator('[class="slds-dropdown__item listViewSettingsMenuClone"]');
+              await locator.click();
 
-            common.Log('Wait for ListView Modal View');
-            await page.waitForSelector(
-              'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-header.slds-modal__header'
-            );
+              common.Log('Wait for ListView Modal View');
+              await page.waitForSelector(
+                'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-header.slds-modal__header'
+              );
 
-            common.Log('Locate ListView Name Field');
-            locator = page.locator('[class="slds-input"]');
+              common.Log('Locate ListView Name Field');
+              locator = page.locator('[class="slds-input"]');
 
-            common.Log('Clear and Set ListView Name Field');
-            await locator.last().clear();
-            await locator.last().fill(fParam2.listViewName as string);
+              common.Log('Clear and Set ListView Name Field');
+              await locator.last().clear();
+              await locator.last().fill(fParam2.listViewName as string);
 
-            common.Log('Locate Save Button');
-            const modal = page.locator('[class="modal-footer slds-modal__footer"]');
-            locator = modal.locator('[type="button"]');
-            await locator.last().click();
-
-           // await page.waitForLoadState('networkidle');
-           // const screenshotName = 'LV_' + fParam2.userId + '_' + fParam2.listViewId;
-           // await page.screenshot({ fullPage: true, path: outputPath + screenshotName + '.png' });
-
+              common.Log('Locate Save Button');
+              const modal = page.locator('[class="modal-footer slds-modal__footer"]');
+              locator = modal.locator('[type="button"]');
+              await locator.last().click();
+            }
           } catch (e) {
             const err = e as SfError;
             errorMessage = err.name;
             common.Log(err.name + ':' + err.message);
-            const screenshotName = 'LV_ERROR_' + fParam2.userId + '_' + fParam2.listViewId;
+            const screenshotName = 'LV_ERROR_' + fParam2.listViewId;
             await page.screenshot({ fullPage: true, path: common.outputPath + screenshotName + '.png' });
           }
         }
 
-        // datetime, userid,sobjecttype,listViewId,listViewName,username,status
-        common.WriteResultFile(errorMessage, (
-          fParam2.userId + '\t' +
-          fParam2.sObjectType + '\t' +
-          fParam2.listViewId + '\t' +
-          fParam2.listViewName + '\t' +
-          errorMessage + '\t' +
-          username + '\t' +
-          new Date().toISOString() + '\n'
-        ));
+        // datetime, username,sobjecttype,listViewId,listViewName,status
+        common.WriteResultFile(
+          errorMessage,
+          fParam2.userName +
+            '\t' +
+            fParam2.sObjectType +
+            '\t' +
+            fParam2.listViewId +
+            '\t' +
+            fParam2.listViewName +
+            '\t' +
+            errorMessage +
+            '\t' +
+            new Date().toISOString() +
+            '\n'
+        );
       }
 
       if (username !== 'LOGIN FAILED') {
-
         common.Log('Salesforce session Logout');
-        await page.goto(
-          common.sfDomain + '/secur/logout.jsp'
-        );
+        await page.goto(common.sfDomain + '/secur/logout.jsp');
         // await page.waitForLoadState('networkidle');
         common.Log('Salesforce session Logout complete');
-      }
 
-      try {
+        try {
           common.Log('Removing authentication for: ' + username);
           const rm = await AuthRemover.create();
           await rm.removeAuth(username);
@@ -211,6 +237,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
           const err = e as SfError;
           common.Log(err.name + ' ' + err.message);
         }
+      }
     }
 
     common.Log('Closing browser session');
@@ -222,7 +249,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
     common.Log('Done flag: ' + (common.iListViewErrorCount === 0));
 
     return {
-      done: (common.iListViewErrorCount === 0),
+      done: common.iListViewErrorCount === 0,
       path: common.outputRetryFilePath,
     };
   }
