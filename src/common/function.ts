@@ -1,8 +1,10 @@
+/* eslint-disable no-await-in-loop */
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-console */
 import { existsSync, renameSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs';
-import { AuthInfo, AuthRemover, SfError } from '@salesforce/core';
-import { cloneParam, cloneParamList } from './definition.js';
+import { AuthInfo, AuthRemover, SfError, Org, Connection } from '@salesforce/core';
+import { chromium } from 'playwright';
+import { cloneParam, cloneParamList, SListView } from './definition.js';
 
 
 export default class Function {
@@ -66,6 +68,160 @@ export default class Function {
       scope.ouput.clear();
     }
     return scope;
+  }
+
+  public async ProcessUserListView (Param: cloneParam[], bSkip: boolean): Promise<string> {
+
+    this.Log('init playwright browser');
+    const browser = await chromium.launch();
+    const page = await browser.newPage();
+
+    let errorMessage;
+    const setListView: Set<string> = new Set<string>();
+    let username = Param[0].userName as string;
+    this.Log('Username: ' + username);
+
+    if (username !== 'NOT FOUND') {
+      try {
+        errorMessage = 'OK';
+
+        // Login as this user
+        this.Log('Authenticating User: ' + username);
+        const authInfo = await this.CreateAuthentication(username);
+
+        // const setListViews: Set<string> = new Set();
+        this.Log('Create Connection for: ' + username);
+        const org2: Org = await Org.create({
+          connection: await Connection.create({
+            authInfo,
+          }),
+        });
+        const con2 = org2.getConnection('58.0');
+        this.sfDomain = con2.instanceUrl;
+
+        const lsoLV = con2.query<SListView>(
+          "select Name, SobjectType from ListView where createdbyid='" + con2.userInfo?.id + "'"
+        );
+        for (const f of lsoLV.records) {
+          setListView.add(f.SobjectType + f.Name);
+        }
+
+        this.Log('Playwright salesforce login: ' + username);
+        await page.goto(this.sfDomain + '/secur/frontdoor.jsp?sid=' + con2.accessToken);
+        await page.waitForLoadState('networkidle');
+        await page.setViewportSize({
+          width: 1280,
+          height: 960,
+        });
+      } catch (e) {
+        const err = e as SfError;
+        errorMessage = err.name;
+        this.Log('LOGIN FAILED: ' + err.name + ':' + err.message);
+        username = 'LOGIN FAILED';
+      }
+    } else {
+      username = 'LOGIN FAILED';
+      errorMessage = 'USER NOT FOUND';
+    }
+
+    // Go to every listview and clone it
+    for (const fParam2 of Param) {
+      if (username !== 'LOGIN FAILED') {
+        try {
+          if (bSkip && setListView.has(fParam2.sObjectType + ':' + fParam2.listViewName)) {
+            errorMessage = 'EXISTS';
+            this.Log(
+              'Skipping Existing ListView: ' +
+                fParam2.sObjectType +
+                ':' +
+                fParam2.listViewName +
+                ':' +
+                fParam2.listViewId
+            );
+          } else {
+            errorMessage = 'OK';
+
+            // go to the listview
+            this.Log(
+              'Navigate to ListView: ' + fParam2.sObjectType + ':' + fParam2.listViewName + ':' + fParam2.listViewId
+            );
+            await page.goto(
+              this.sfDomain + '/lightning/o/' + fParam2.sObjectType + '/list?filterName=' + fParam2.listViewId
+            );
+            await page.waitForLoadState('networkidle');
+
+            // Click on the clone button
+            this.Log('Locate gear');
+            let locator;
+            locator = page.locator(
+              '[class="test-listViewSettingsMenu slds-m-left_xx-small forceListViewSettingsMenu"]'
+            );
+            await locator.click();
+
+            this.Log('Locate clone');
+            locator = page.locator('[class="slds-dropdown__item listViewSettingsMenuClone"]');
+            await locator.click();
+
+            this.Log('Wait for ListView Modal View');
+            await page.waitForSelector(
+              'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-header.slds-modal__header'
+            );
+
+            this.Log('Locate ListView Name Field');
+            locator = page.locator('[class="slds-input"]');
+
+            this.Log('Clear and Set ListView Name Field');
+            await locator.last().clear();
+            await locator.last().fill(fParam2.listViewName as string);
+
+            this.Log('Locate Save Button');
+            const modal = page.locator('[class="modal-footer slds-modal__footer"]');
+            locator = modal.locator('[type="button"]');
+            await locator.last().click();
+          }
+        } catch (e) {
+          const err = e as SfError;
+          errorMessage = err.name;
+          this.Log(err.name + ':' + err.message);
+          const screenshotName = 'LV_ERROR_' + fParam2.listViewId;
+          await page.screenshot({ fullPage: true, path: this.outputPath + screenshotName + '.png' });
+        }
+      }
+
+      // datetime, username,sobjecttype,listViewId,listViewName,status
+      this.WriteResultFile(
+        errorMessage,
+        fParam2.userName +
+          '\t' +
+          fParam2.sObjectType +
+          '\t' +
+          fParam2.listViewId +
+          '\t' +
+          fParam2.listViewName +
+          '\t' +
+          errorMessage +
+          '\t' +
+          new Date().toISOString() +
+          '\n'
+      );
+    }
+
+    if (username !== 'LOGIN FAILED') {
+      this.Log('Salesforce session Logout');
+      await page.goto(this.sfDomain + '/secur/logout.jsp');
+      // await page.waitForLoadState('networkidle');
+      this.Log('Salesforce session Logout complete');
+
+      try {
+        this.Log('Removing authentication for: ' + username);
+        const rm = await AuthRemover.create();
+        await rm.removeAuth(username);
+      } catch (e) {
+        const err = e as SfError;
+        this.Log(err.name + ' ' + err.message);
+      }
+    }
+    return errorMessage;
   }
 
   public InitResultFile(): boolean {
