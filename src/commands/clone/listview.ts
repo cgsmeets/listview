@@ -116,6 +116,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
           const con2 = org2.getConnection('58.0');
           common.sfDomain = con2.instanceUrl;
 
+          setListView.clear();
           const lsoLV = con2.query<SListView>(
             "select Name, SobjectType from ListView where createdbyid='" + con2.userInfo?.id + "'"
           );
