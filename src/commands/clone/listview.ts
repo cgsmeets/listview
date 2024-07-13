@@ -4,6 +4,7 @@
 import { inspect } from 'node:util';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
+import { chromium } from 'playwright';
 import Function from '../../common/function.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -44,16 +45,16 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       required: true,
       exists: true,
     }),
+    'skip-duplicate': Flags.boolean({
+      summary: messages.getMessage('flags.skip-duplicate.summary'),
+      char: 's',
+      required: true
+    }),
     instance: Flags.custom({
       summary: messages.getMessage('flags.instance.summary'),
       char: 'u',
       required: true,
     })(),
-    'skip-duplicate': Flags.boolean({
-      summary: messages.getMessage('flags.skip-duplicate.summary'),
-      char: 's',
-      default: false
-    }),
   };
 
   public async run(): Promise<CloneListviewResult> {
@@ -81,42 +82,55 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
    // const browser = await chromium.launch();
    // const page = await browser.newPage();
 
-    common.Log('Read input CSV file');
-    const scope = common.ReadCSV();
-    if (scope.input.size === 0) {
-      common.Log('input CSV empty');
-    }
-
     common.Log('Init output CSV file and log');
     if (!common.InitResultFile()) this.exit();
+    common.WriteStatusFile();
 
     // let errorMessage = 'OK';
     // const setListView: Set<string> = new Set<string>();
 
     // const util = require('node:util');
 
+    const browser = await chromium.launch();
+
     let iJob: number = 0;
     const mJobs: Map<number, object>  = new Map<number, object>();
-    for (const fParam of scope.input.values()) {
-      iJob++;
-      let bScheduled: boolean = false;
+    for (const fParam of common.scope.input.values()) {
+      let bScheduled: boolean =  true;
+      for (const fParam2 of fParam) {
+        if (fParam2.Status !== 'OK') {
+          bScheduled = false;
+          iJob++;
+        }
+      }
+
       while (!bScheduled) {
-        if (mJobs.size < 10) {
+        if (mJobs.size < 2) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-          mJobs.set(iJob, common.ProcessUserListView(fParam, flags['skip-duplicate']));
+//          mJobs.set(iJob, common.dummy(fParam));
+          mJobs.set(iJob, common.ProcessUserListView(browser, fParam, flags['skip-duplicate']));
           bScheduled = true;
+          common.Log('Scheduled:' + iJob);
         }
         for (const job of mJobs.keys()) {
           if (!inspect(mJobs.get(job)).includes('pending')) {
-            common.Log('Done');
+            mJobs.delete(job);
+            common.Log('Completed:' + job);
           }
         }
         await common.Sleep(1000);
+
+
       }
     }
+    common.Log('wait for all jobs to finish');
+    await Promise.all(mJobs.values());
+    common.Log('All jobs finished');
 
-    // common.Log('Closing browser session');
-    // await browser.close();
+    common.WriteStatusFile();
+
+     common.Log('Closing browser session');
+     await browser.close();
 
     common.Log('Process finished');
     common.Log('Check output csv: ' + common.outputFilePath);

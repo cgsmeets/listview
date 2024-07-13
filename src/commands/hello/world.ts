@@ -21,6 +21,10 @@ export default class World extends SfCommand<HelloWorldResult> {
       description: messages.getMessage('flags.name.description'),
       default: 'World',
     }),
+    testboolean: Flags.boolean({
+      summary: messages.getMessage('flags.testboolean.summary'),
+      char: 't',
+    }),
   };
 
   public async run(): Promise<HelloWorldResult> {

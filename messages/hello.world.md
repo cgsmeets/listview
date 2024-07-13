@@ -27,3 +27,7 @@ This person can be anyone in the world!
 # info.hello
 
 Hello %s at %s.
+
+# flags.testboolean.summary
+
+Testing the boolean.

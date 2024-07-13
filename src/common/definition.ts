@@ -9,6 +9,7 @@ export type cloneParam = {
   listViewId?: string;
   listViewName?: string;
   Error?: string;
+  Status?: string;
 };
 
 export type listView = {
