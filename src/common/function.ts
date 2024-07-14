@@ -108,11 +108,40 @@ export default class Function {
     return undefined;
   }
 
+  public GetSelector(sobjecttype: string): string {
+
+      const MapSelector: Map<string, string> = new Map<string,string>(
+        [
+        ['cgcloud__Promotion__c',''],
+        ['cgcloud__Fund__c',''],
+        ['cgcloud__Payment__c',''],
+        ['cgcloud__Rate_Based_Funding__c',''],
+        ['CGT_Delivery_Profile__c',''],
+        ['Product2',''],
+        ['CGT_UserCustomerProduct__c',''],
+        ['Assortment',''],
+        ['cgcloud__Fund_Transaction_Header__c',''],
+        ['cgcloud__Tactic_Product_Condition__c',''],
+        ['cgcloud__User_Setting__c',''],
+        ['CGT_Approval_Threshold__c',''],
+        ['CGT_UserCustomerProduct__c',''],
+        ['cgcloud__Sales_Organization__c',''],
+        ['CGT_Delivery_Profile__c',''],
+        ['CGT_UserCustomerProduct__c',''],
+        ['CGT_StandardReport__c',''],
+        ['CGT_Broadcast__c',''],
+        ['CGT_Delivery_Profile__c',''],
+        ]);
+
+      return MapSelector.get(sobjecttype) as string;
+
+  }
+
   public async ProcessUserListView (browser: Browser, Param: cloneParam[], bSkip: boolean): Promise<string> {
 
     this.Log('init playwright browser');
     const page = await browser.newPage();
-    page.setDefaultTimeout(15_000);
+    page.setDefaultTimeout(60_000);
 
     const setListView: Set<string> = new Set<string>();
     const username = Param[0].userName as string;
@@ -122,6 +151,7 @@ export default class Function {
       const con2 = await this.LoginJWT(username);
       if (con2 === undefined) throw (new Error('JWT Error'));
       this.sfDomain = con2.instanceUrl;
+      this.Log('DOMAIN:' + this.sfDomain);
 
       const userId = (await con2.identity()).user_id;
       this.Log(Param[0].userName + ':' + userId);
@@ -154,15 +184,19 @@ export default class Function {
               );
               await page.waitForLoadState('networkidle');
 
+              const screenshotName = 'LV_LOGIN_' + fParam2.listViewId;
+              await page.screenshot({ fullPage: true, path: this.outputPath + screenshotName + '.png' });
+
               let locator;
               if (fParam2.sObjectType?.toLowerCase().includes('__c')) {
 
                 this.Log('Custom Object Locate gear');
                 locator = page.locator(
-                  '[class="test-listViewSettingsMenu slds-m-left_xx-small"]'
-                );
+             //     '[class="test-listViewSettingsMenu slds-m-left_xx-small"]'
+                    '[class="test-listViewSettingsMenu slds-m-left_xx-small forceListViewSettingsMenu"]'
+            );
                 await locator.click();
-
+/*
                 this.Log('Custom Object Locate clone');
                 locator = await page.waitForSelector("//div[contains(@class, 'test-listViewSettingsMenu') and contains(@class, 'slds-m-left_xx-small')]//lightning-menu-item[2]");
                 await locator.click();
@@ -182,7 +216,7 @@ export default class Function {
 
                 this.Log('Custom Object Wait for popup to disappear');
                 await page.waitForSelector('lightning-modal', { state: 'detached' });
-
+*/
               } else {
                   // Click on the clone button
                   this.Log('Standard Object Locate gear');
@@ -190,7 +224,7 @@ export default class Function {
                     '[class="test-listViewSettingsMenu slds-m-left_xx-small forceListViewSettingsMenu"]'
                   );
                   await locator.click();
-
+/*
                   this.Log('Standard Object Locate clone');
                   locator = page.locator('[class="slds-dropdown__item listViewSettingsMenuClone"]');
                   await locator.click();
@@ -214,6 +248,7 @@ export default class Function {
 
                   this.Log('Standard Object Wait for popup to disappear');
                   await page.waitForSelector('[class="modal-container slds-modal__container"]', { state: 'detached' });
+                  */
               }
             }
             this.iListViewCount++;
