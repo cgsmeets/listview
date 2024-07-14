@@ -81,7 +81,13 @@ export default class Function {
     Param[0].Status = 'RETRY';
    await this.Sleep(10);
 
+    if ( (this.GetSelector('test')) === 'custom') {
+      console.log ('BAD ');
 
+    }
+    else {
+      console.log('GOED');
+    }
     return '';
   }
   public async LoginJWT(username: string): Promise<Connection|undefined> {
@@ -110,31 +116,32 @@ export default class Function {
 
   public GetSelector(sobjecttype: string): string {
 
+    // custom    '[class="test-listViewSettingsMenu slds-m-left_xx-small"]'
+    // standard  '[class="test-listViewSettingsMenu slds-m-left_xx-small forceListViewSettingsMenu"]'
       const MapSelector: Map<string, string> = new Map<string,string>(
         [
-        ['cgcloud__Promotion__c',''],
-        ['cgcloud__Fund__c',''],
-        ['cgcloud__Payment__c',''],
-        ['cgcloud__Rate_Based_Funding__c',''],
-        ['CGT_Delivery_Profile__c',''],
-        ['Product2',''],
-        ['CGT_UserCustomerProduct__c',''],
-        ['Assortment',''],
-        ['cgcloud__Fund_Transaction_Header__c',''],
-        ['cgcloud__Tactic_Product_Condition__c',''],
-        ['cgcloud__User_Setting__c',''],
-        ['CGT_Approval_Threshold__c',''],
-        ['CGT_UserCustomerProduct__c',''],
-        ['cgcloud__Sales_Organization__c',''],
-        ['CGT_Delivery_Profile__c',''],
-        ['CGT_UserCustomerProduct__c',''],
-        ['CGT_StandardReport__c',''],
-        ['CGT_Broadcast__c',''],
+        ['cgcloud__Promotion__c','standard'],
+        ['cgcloud__Fund__c','standard'],
+        ['cgcloud__Payment__c','standard'],
+        ['cgcloud__Rate_Based_Funding__c','standard'],
+        ['CGT_Delivery_Profile__c','standard'],
+        ['Product2','standard'],
+        ['CGT_UserCustomerProduct__c','standard'],
+        ['Assortment','standard'],
+        ['cgcloud__Fund_Transaction_Header__c','standard'],
+        ['cgcloud__Tactic_Product_Condition__c','standard'],
+        ['cgcloud__User_Setting__c','standard'],
+        ['CGT_Approval_Threshold__c','standard'],
+        ['CGT_UserCustomerProduct__c','standard'],
+        ['cgcloud__Sales_Organization__c','standard'],
+        ['CGT_Delivery_Profile__c','standard'],
+        ['CGT_UserCustomerProduct__c','standard'],
+        ['CGT_StandardReport__c','standard'],
+        ['CGT_Broadcast__c','standard'],
         ['CGT_Delivery_Profile__c',''],
         ]);
 
       return MapSelector.get(sobjecttype) as string;
-
   }
 
   public async ProcessUserListView (browser: Browser, Param: cloneParam[], bSkip: boolean): Promise<string> {
@@ -188,15 +195,16 @@ export default class Function {
               await page.screenshot({ fullPage: true, path: this.outputPath + screenshotName + '.png' });
 
               let locator;
-              if (fParam2.sObjectType?.toLowerCase().includes('__c')) {
+              if (this.GetSelector(fParam2.sObjectType as string) === 'custom') {
+//              if (fParam2.sObjectType?.toLowerCase().includes('__c')) {
 
                 this.Log('Custom Object Locate gear');
                 locator = page.locator(
-             //     '[class="test-listViewSettingsMenu slds-m-left_xx-small"]'
-                    '[class="test-listViewSettingsMenu slds-m-left_xx-small forceListViewSettingsMenu"]'
+                  '[class="test-listViewSettingsMenu slds-m-left_xx-small"]'
+                //    '[class="test-listViewSettingsMenu slds-m-left_xx-small forceListViewSettingsMenu"]'
             );
                 await locator.click();
-/*
+
                 this.Log('Custom Object Locate clone');
                 locator = await page.waitForSelector("//div[contains(@class, 'test-listViewSettingsMenu') and contains(@class, 'slds-m-left_xx-small')]//lightning-menu-item[2]");
                 await locator.click();
@@ -209,7 +217,7 @@ export default class Function {
                 locator = modal.locator('lightning-input').first().locator('input');
                 await locator.clear();
                 await locator.fill(fParam2.listViewName as string);
-
+/*
                 this.Log('Custom Object Locate Save Button');
                 locator = modal.locator('lightning-modal-footer').locator('[type="button"]');
                 await locator.last().click();
@@ -224,7 +232,7 @@ export default class Function {
                     '[class="test-listViewSettingsMenu slds-m-left_xx-small forceListViewSettingsMenu"]'
                   );
                   await locator.click();
-/*
+
                   this.Log('Standard Object Locate clone');
                   locator = page.locator('[class="slds-dropdown__item listViewSettingsMenuClone"]');
                   await locator.click();
@@ -240,7 +248,7 @@ export default class Function {
                   this.Log('Standard Object Clear and Set ListView Name Field');
                   await locator.last().clear();
                   await locator.last().fill(fParam2.listViewName as string);
-
+/*
                   this.Log('Standard Object Locate Save Button');
                   const modal = page.locator('[class="modal-footer slds-modal__footer"]');
                   locator = modal.locator('[type="button"]');

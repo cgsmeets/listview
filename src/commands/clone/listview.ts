@@ -107,8 +107,8 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       while (!bScheduled) {
         if (mJobs.size < 1) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-//          mJobs.set(iJob, common.dummy(fParam));
-          mJobs.set(iJob, common.ProcessUserListView(browser, fParam, flags['skip-duplicate']));
+          mJobs.set(iJob, common.dummy(fParam));
+          // mJobs.set(iJob, common.ProcessUserListView(browser, fParam, flags['skip-duplicate']));
           bScheduled = true;
           common.Log('Scheduled:' + iJob);
         }
