@@ -20,6 +20,7 @@ export default class Function {
   private outputLogFilePath: string;
   private oauth2Options;
   private jsonOutput: boolean;
+  private MapSelector: Map<string, string>;
 
   public constructor(inputFilePath: string, outputPath: string, clientId: string, keyFilePath: string, jsonOutput: boolean, sfDomain: string) {
     this.outputPath = outputPath + '/';
@@ -32,6 +33,41 @@ export default class Function {
     this.iListViewTotal = 0;
     this.jsonOutput = jsonOutput;
     this.scope = this.ReadCSV();
+
+    this.MapSelector = new Map<string,string>(
+			[
+				['Assortment','standard'],
+				['cgcloud__Batch_Run_Status__c','standard'],
+				['cgcloud__Condition_Template__c','standard'],
+				['cgcloud__Fund__c','standard'],
+				['cgcloud__Fund_Template__c','standard'],
+				['cgcloud__Fund_Transaction_Header__c','standard'],
+				['cgcloud__Fund_Transaction_Template__c','standard'],
+				['cgcloud__KPI_Definition__c','standard'],
+				['cgcloud__Payment__c','standard'],
+				['cgcloud__Payment_Template__c','standard'],
+				['cgcloud__Promotion__c','standard'],
+				['cgcloud__Promotion_Template__c','standard'],
+				['cgcloud__Promotion_Template_Tactic_Template__c','standard'],
+				['cgcloud__Rate_Based_Funding__c','standard'],
+				['cgcloud__RTR_Report_Configuration__c','standard'],
+				['cgcloud__Sales_Organization__c','standard'],
+				['cgcloud__Tactic__c','standard'],
+				['cgcloud__Tactic_Product_Condition__c','standard'],
+				['cgcloud__User_Setting__c','standard'],
+				['CGT_Approval_Threshold__c','standard'],
+				['CGT_Broadcast__c','standard'],
+				['CGT_Cannibalisation_Rate__c','standard'],
+				['CGT_Delivery_Profile__c','standard'],
+				['CGT_FundStaging__c','standard'],
+				['CGT_FundStagingUpload__c','standard'],
+				['CGT_FundTransactionStagingUpload__c','standard'],
+				['CGT_RateBasedFundingStage__c','standard'],
+				['CGT_StandardReport__c','standard'],
+				['CGT_UserCustomerProduct__c','standard'],
+				['Product2','standard'],
+			]);
+
 
     this.sfDomain = sfDomain;
     // oauth details
@@ -118,30 +154,7 @@ export default class Function {
 
     // custom    '[class="test-listViewSettingsMenu slds-m-left_xx-small"]'
     // standard  '[class="test-listViewSettingsMenu slds-m-left_xx-small forceListViewSettingsMenu"]'
-      const MapSelector: Map<string, string> = new Map<string,string>(
-        [
-        ['cgcloud__Promotion__c','standard'],
-        ['cgcloud__Fund__c','standard'],
-        ['cgcloud__Payment__c','standard'],
-        ['cgcloud__Rate_Based_Funding__c','standard'],
-        ['CGT_Delivery_Profile__c','standard'],
-        ['Product2','standard'],
-        ['CGT_UserCustomerProduct__c','standard'],
-        ['Assortment','standard'],
-        ['cgcloud__Fund_Transaction_Header__c','standard'],
-        ['cgcloud__Tactic_Product_Condition__c','standard'],
-        ['cgcloud__User_Setting__c','standard'],
-        ['CGT_Approval_Threshold__c','standard'],
-        ['CGT_UserCustomerProduct__c','standard'],
-        ['cgcloud__Sales_Organization__c','standard'],
-        ['CGT_Delivery_Profile__c','standard'],
-        ['CGT_UserCustomerProduct__c','standard'],
-        ['CGT_StandardReport__c','standard'],
-        ['CGT_Broadcast__c','standard'],
-        ['CGT_Delivery_Profile__c',''],
-        ]);
-
-      return MapSelector.get(sobjecttype) as string;
+      return this.MapSelector.get(sobjecttype) as string;
   }
 
   public async ProcessUserListView (browser: Browser, Param: cloneParam[], bSkip: boolean): Promise<string> {
