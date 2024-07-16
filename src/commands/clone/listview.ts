@@ -48,13 +48,23 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
     'skip-duplicate': Flags.boolean({
       summary: messages.getMessage('flags.skip-duplicate.summary'),
       char: 's',
-      required: true
+      required: false,
     }),
     instance: Flags.custom({
       summary: messages.getMessage('flags.instance.summary'),
       char: 'u',
       required: true,
     })(),
+    validate: Flags.boolean({
+      summary: messages.getMessage('flags.validate.summary'),
+      char: 'v',
+      default: false,
+    }),
+    mode: Flags.string({
+      summary: messages.getMessage('flags.mode.summary'),
+      char: 'm',
+      required: true,
+    }),
   };
 
   public async run(): Promise<CloneListviewResult> {
@@ -71,6 +81,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
     // Package location and defaults
 
     common.Log('Starting ListView Clone');
+    common.Log('Operation Mode: ' + flags['mode']);
     common.Log('Skipping Duplicates: ' + flags['skip-duplicate']);
     common.Log('input csv: ' + flags['input-csv']);
     common.Log('output path: ' + flags['output-csv']);
@@ -78,9 +89,9 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
     common.Log('Key file: ' + flags['key-file']);
 
     // Do some magic below
-   // common.Log('init playwright browser');
-   // const browser = await chromium.launch();
-   // const page = await browser.newPage();
+    // common.Log('init playwright browser');
+    // const browser = await chromium.launch();
+    // const page = await browser.newPage();
 
     common.Log('Init output CSV file and log');
     if (!common.InitResultFile()) this.exit();
@@ -94,10 +105,11 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
     const browser = await chromium.launch();
 
     let iJob: number = 0;
-    const mJobs: Map<number, object>  = new Map<number, object>();
+    const mJobs: Map<number, object> = new Map<number, object>();
     for (const fParam of common.scope.input.values()) {
-      let bScheduled: boolean =  true;
+      let bScheduled: boolean = true;
       for (const fParam2 of fParam) {
+        if (!bScheduled) break;
         if (fParam2.Status !== 'OK') {
           bScheduled = false;
           iJob++;
@@ -105,10 +117,21 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       }
 
       while (!bScheduled) {
-        if (mJobs.size < 1) {
+        if (mJobs.size < 20) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-          mJobs.set(iJob, common.dummy(fParam));
-          // mJobs.set(iJob, common.ProcessUserListView(browser, fParam, flags['skip-duplicate']));
+
+          switch (flags['mode']) {
+            case 'clone':
+         //     mJobs.set(iJob, common.ProcessUserListView(browser, fParam, flags['skip-duplicate']));
+              break;
+            case 'delete':
+              mJobs.set(iJob, common.DeleteUserListView(browser, fParam));
+              break;
+            case 'validate':
+              mJobs.set(iJob, common.ValidateUserListView(browser, fParam));
+              break;
+          }
+
           bScheduled = true;
           common.Log('Scheduled:' + iJob);
         }
@@ -119,8 +142,6 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
           }
         }
         await common.Sleep(1000);
-
-
       }
     }
     common.Log('wait for all jobs to finish');
@@ -129,8 +150,8 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
 
     common.WriteStatusFile();
 
-     common.Log('Closing browser session');
-     await browser.close();
+    common.Log('Closing browser session');
+    await browser.close();
 
     common.Log('Process finished');
     common.Log('Check output csv: ' + common.outputFilePath);

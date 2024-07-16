@@ -41,3 +41,11 @@ Salesforce instance URL.
 # flags.skip-duplicate.summary
 
 When set to true duplicate listview names for an object will be skipped.
+
+# flags.validate.summary
+
+Validate if the listview is visible for the user.
+
+# flags.mode.summary
+
+Operation mode.

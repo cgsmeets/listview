@@ -149,6 +149,214 @@ export default class Function {
     }
     return undefined;
   }
+  public async DeleteUserListView (browser: Browser, Param: cloneParam[]): Promise<string> {
+
+    this.Log('init playwright browser');
+    const page = await browser.newPage();
+    page.setDefaultTimeout(10_000);
+
+    const username = Param[0].userName as string;
+    this.Log('Username: ' + username);
+    try {
+
+      const con2 = await this.LoginJWT(username);
+      if (con2 === undefined) throw (new Error('JWT Error'));
+      this.sfDomain = con2.instanceUrl;
+
+      const userId = (await con2.identity()).user_id;
+      this.Log(Param[0].userName + ':' + userId);
+
+      this.Log('Playwright salesforce login: ' + username);
+      await page.goto(this.sfDomain + '/secur/frontdoor.jsp?sid=' + con2.accessToken);
+      await page.waitForLoadState('networkidle');
+      await page.setViewportSize({
+        width: 1280,
+        height: 960,
+      });
+
+      // Go to every listview and clone it
+      for (const fParam2 of Param) {
+         if (fParam2.Status !== 'OK') {
+          try {
+            this.Log('DELETE LV:' + fParam2.sObjectType + ':' + fParam2.listViewName);
+          {
+              // go to the listview
+              this.Log( 'Navigate to ListView: ' + this.sfDomain + '/lightning/o/' + fParam2.sObjectType + '/list?filterName=' + fParam2.listViewId);
+              await page.goto(
+                this.sfDomain + '/lightning/o/' + fParam2.sObjectType + '/list?filterName=' + fParam2.listViewId
+              );
+              await page.waitForLoadState('networkidle');
+
+              let locator;
+             {
+                  // Click on the clone button
+                  this.Log('Standard Object Locate gear');
+                  locator = page.locator(
+                    '[class="test-listViewSettingsMenu slds-m-left_xx-small forceListViewSettingsMenu"]'
+                  );
+                  await locator.click();
+                  await page.waitForLoadState('networkidle');
+
+
+                  this.Log('Standard Object Locate delete');
+                  locator = page.locator('[class="slds-dropdown__item listViewSettingsMenuDelete"]');
+                  await locator.click();
+
+                  this.Log('Standard Object Wait for ListView Modal View');
+                  await page.waitForSelector(
+                    'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div.DESKTOP.uiModal.open.active > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div'
+                   // 'body > div.desktop.container.forceStyle.oneOne.navexDesktopLayoutContainer.lafAppLayoutHost.forceAccess.tablet > div.DESKTOP.uiContainerManager > div > div.panel.slds-modal.test-forceListViewSettingsDetail.slds-fade-in-open > div > div.modal-header.slds-modal__header'
+                  );
+
+                 // this.Log('Standard Object Locate ListView Name Field');
+                 // locator = page.locator('[class="slds-input"]');
+
+                 // this.Log('Standard Object Clear and Set ListView Name Field');
+                 // await locator.last().clear();
+                 // await locator.last().fill(fParam2.listViewName as string);
+
+                  this.Log('Standard Object Locate Delete Button');
+                  const modal = page.locator('[class="modal-footer slds-modal__footer"]');
+                  locator = modal.locator('[type="button"]');
+                  await locator.last().click();
+
+                  this.Log('Standard Object Wait for popup to disappear');
+                  await page.waitForSelector('[class="modal-container slds-modal__container"]', { state: 'detached' });
+
+                //  const screenshotName = 'LV_DELETE_' + fParam2.listViewId;
+                //  await page.screenshot({ fullPage: true, path: this.outputPath + screenshotName + '.png' });
+
+              }
+            }
+            this.iListViewCount++;
+            fParam2.Status = 'OK';
+            fParam2.Error = '';
+
+
+          } catch (e) {
+            const err = e as SfError;
+            this.iListViewErrorCount++;
+            fParam2.Status = 'RETRY';
+            fParam2.Error =  err.name + ':' + err.message;
+            this.Log('INNER ERROR for user ' + Param[0].userName + ':' + err.name + ':' + err.message);
+            this.WriteRetryFile(fParam2);
+          }
+        }
+        this.WriteStatusFile();
+      }
+
+      try {
+          this.Log('Salesforce session Logout');
+          await page.goto(this.sfDomain + '/secur/logout.jsp');
+          await page.waitForLoadState('networkidle');
+          this.Log('Salesforce session Logout complete');
+
+          this.Log('Removing authentication for: ' + username);
+          const rm = await AuthRemover.create();
+          await rm.removeAuth(username);
+        } catch (e) {
+          const err = e as SfError;
+          this.Log(err.name + ' ' + err.message);
+      }
+
+      await page.close();
+
+    } catch (e) {
+     const err = e as SfError;
+     for (const fParam2 of Param) {
+      if (fParam2.Status !=='OK') {
+        this.iListViewErrorCount++;
+        fParam2.Error =  err.name + ':' + err.message;
+        fParam2.Status = 'RETRY';
+        this.WriteRetryFile(fParam2);
+      }
+    }
+    this.Log('OUTER ERROR for user ' + Param[0].userName + ':' + err.name + ':' + err.message);
+  }
+
+  this.WriteStatusFile();
+  return 'OK';
+  }
+
+
+  public async ValidateUserListView (browser: Browser, Param: cloneParam[]): Promise<string> {
+
+  //  const setListView: Set<string> = new Set<string>();
+    const username = Param[0].userName as string;
+    this.Log('Username: ' + username);
+    try {
+
+      const con2 = await this.LoginJWT(username);
+      if (con2 === undefined) throw (new Error('JWT Error'));
+      this.sfDomain = con2.instanceUrl;
+
+      const userId = (await con2.identity()).user_id;
+      this.Log(Param[0].userName + ':' + userId);
+
+
+      for (const fParam2 of Param) {
+          try {
+            this.Log( 'Validate ListView: ' + this.sfDomain + '/lightning/o/' + fParam2.sObjectType + '/list?filterName=' + fParam2.listViewId);
+            const lvResult = await con2.query('SELECT Id, Name, DeveloperName, NamespacePrefix, SobjectType, IsSoqlCompatible, CreatedDate, CreatedById, LastModifiedDate, LastModifiedById, SystemModstamp, LastViewedDate, LastReferencedDate \
+                                        FROM ListView where createdbyid = ' + '\'' + userId + '\'' +
+                                        ' AND SobjectType = ' + '\'' + fParam2.sObjectType + '\'' +
+                                        ' AND Name = ' + '\'' + fParam2.listViewName?.replace(/[\\$'"]/g, '\\$&') + '\'' +
+                                        ' ORDER BY CREATEDDATE DESC'
+                                      );
+
+            if (lvResult.records.length === 0) {
+              this.iListViewErrorCount++;
+              fParam2.Status='ERR';
+              fParam2.Error='NO LISTVIEW FOUND';
+            }
+
+            if (lvResult.records.length === 2) {
+              this.iListViewErrorCount++;
+              fParam2.Status='ERR';
+              fParam2.Error='DUPLICATE LISTVIEWS FOUND';
+              for (const flv of lvResult.records) {
+                fParam2.Error += '\t' + flv.Id;
+              }
+
+            }
+            if (lvResult.records.length > 2) {
+              this.iListViewErrorCount++;
+              fParam2.Status='ERR';
+              fParam2.Error='MULTIPLE LISTVIEWS FOUND';
+              for (const flv of lvResult.records) {
+                fParam2.Error += '\t' + flv.Id;
+              }
+            }
+
+            if (lvResult.records.length === 1) {
+              this.iListViewCount++;
+              fParam2.Status='VAL';
+              fParam2.Error='VALIDATE OK\t' + lvResult.records[0].Id;
+            }
+            this.Log(fParam2.Status + ' : ' + fParam2.Error);
+          } catch (e) {
+            const err = e as SfError;
+            fParam2.Status = 'ERR';
+            fParam2.Error =  err.name + ':' + err.message;
+          }
+          this.WriteStatusFile();
+      }
+
+    } catch (e) {
+      const err = e as SfError;
+      for (const fParam2 of Param) {
+       if (fParam2.Status !=='OK') {
+         this.iListViewErrorCount++;
+         fParam2.Error =  err.name + ':' + err.message;
+         fParam2.Status = 'ERR';
+         this.WriteRetryFile(fParam2);
+       }
+     }
+     this.Log('OUTER ERROR for user ' + Param[0].userName + ':' + err.name + ':' + err.message);
+   }
+    return 'OK';
+
+  }
 
   public GetSelector(sobjecttype: string): string {
 
@@ -171,7 +379,6 @@ export default class Function {
       const con2 = await this.LoginJWT(username);
       if (con2 === undefined) throw (new Error('JWT Error'));
       this.sfDomain = con2.instanceUrl;
-      this.Log('DOMAIN:' + this.sfDomain);
 
       const userId = (await con2.identity()).user_id;
       this.Log(Param[0].userName + ':' + userId);
@@ -195,27 +402,24 @@ export default class Function {
               fParam2.Error='EXISTS';
               this.Log('Skipping Existing ListView: ' + fParam2.sObjectType + ':' + fParam2.listViewName + ':' + fParam2.listViewId);
             } else {
-            //  if (fParam2.listViewId === '00BJ8000000TWOwMAO') {fParam2.listViewId = '00BJ8000001TWOwMAO';}
 
               // go to the listview
-              this.Log( 'Navigate to ListView: ' + fParam2.sObjectType + ':' + fParam2.listViewName + ':' + fParam2.listViewId);
+              this.Log( 'Navigate to ListView: ' + this.sfDomain + '/lightning/o/' + fParam2.sObjectType + '/list?filterName=' + fParam2.listViewId);
               await page.goto(
                 this.sfDomain + '/lightning/o/' + fParam2.sObjectType + '/list?filterName=' + fParam2.listViewId
               );
               await page.waitForLoadState('networkidle');
 
-              const screenshotName = 'LV_LOGIN_' + fParam2.listViewId;
-              await page.screenshot({ fullPage: true, path: this.outputPath + screenshotName + '.png' });
+             // const screenshotName = 'LV_LOGIN_' + fParam2.listViewId;
+             // await page.screenshot({ fullPage: true, path: this.outputPath + screenshotName + '.png' });
 
               let locator;
               if (this.GetSelector(fParam2.sObjectType as string) === 'custom') {
-//              if (fParam2.sObjectType?.toLowerCase().includes('__c')) {
 
                 this.Log('Custom Object Locate gear');
                 locator = page.locator(
                   '[class="test-listViewSettingsMenu slds-m-left_xx-small"]'
-                //    '[class="test-listViewSettingsMenu slds-m-left_xx-small forceListViewSettingsMenu"]'
-            );
+                );
                 await locator.click();
 
                 this.Log('Custom Object Locate clone');
@@ -230,14 +434,14 @@ export default class Function {
                 locator = modal.locator('lightning-input').first().locator('input');
                 await locator.clear();
                 await locator.fill(fParam2.listViewName as string);
-/*
+
                 this.Log('Custom Object Locate Save Button');
                 locator = modal.locator('lightning-modal-footer').locator('[type="button"]');
                 await locator.last().click();
 
                 this.Log('Custom Object Wait for popup to disappear');
                 await page.waitForSelector('lightning-modal', { state: 'detached' });
-*/
+
               } else {
                   // Click on the clone button
                   this.Log('Standard Object Locate gear');
@@ -261,7 +465,7 @@ export default class Function {
                   this.Log('Standard Object Clear and Set ListView Name Field');
                   await locator.last().clear();
                   await locator.last().fill(fParam2.listViewName as string);
-/*
+
                   this.Log('Standard Object Locate Save Button');
                   const modal = page.locator('[class="modal-footer slds-modal__footer"]');
                   locator = modal.locator('[type="button"]');
@@ -269,7 +473,6 @@ export default class Function {
 
                   this.Log('Standard Object Wait for popup to disappear');
                   await page.waitForSelector('[class="modal-container slds-modal__container"]', { state: 'detached' });
-                  */
               }
             }
             this.iListViewCount++;
