@@ -338,6 +338,8 @@ export default class Function {
             const err = e as SfError;
             fParam2.Status = 'ERR';
             fParam2.Error =  err.name + ':' + err.message;
+
+
           }
           this.WriteStatusFile();
       }
@@ -403,9 +405,6 @@ export default class Function {
               );
               await page.waitForLoadState('networkidle');
 
-             // const screenshotName = 'LV_LOGIN_' + fParam2.listViewId;
-             // await page.screenshot({ fullPage: true, path: this.outputPath + screenshotName + '.png' });
-
               let locator;
               if (this.GetSelector(fParam2.sObjectType as string) === 'custom') {
 
@@ -467,8 +466,6 @@ export default class Function {
                   this.Log('Standard Object Wait for popup to disappear');
                   await page.waitForSelector('[class="modal-container slds-modal__container"]', { state: 'detached' });
               }
-              this.iListViewCount++;
-              fParam2.Status = 'OK';
 
               const lvResult = await con2.query('SELECT Id \
                 FROM ListView where createdbyid = ' + '\'' + userId + '\'' +
@@ -478,6 +475,9 @@ export default class Function {
                 if (lvResult.totalSize === 1) fParam2.Error = lvResult.records[0].Id;
                 else fParam2.Error = 'ID NOT FOUND';
 
+                this.iListViewCount++;
+                fParam2.Status = 'OK';
+
           } catch (e) {
             const err = e as SfError;
             this.iListViewErrorCount++;
@@ -485,6 +485,9 @@ export default class Function {
             fParam2.Error =  err.name + ':' + err.message;
             this.Log('INNER ERROR for user ' + Param[0].userName + ':' + err.name + ':' + err.message);
             this.WriteRetryFile(fParam2);
+            const screenshotName = 'LV_LOGIN_' + fParam2.listViewId;
+            await page.screenshot({ fullPage: true, path: this.outputPath + screenshotName + '.png' });
+
           }
         }
         this.WriteStatusFile();
