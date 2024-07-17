@@ -1,7 +1,7 @@
 # listview
 
 example:
-./bin/run.js clone:listview -i /Users/ksmeets/Local/Projects/SDO/listviewclone.csv -r /Users/ksmeets/Local/Projects/SDO -n 3MVG9SOw8KERNN0.2nOtUkdNWY45cnwTDz8.PBwwCbu2F4vzAU.YYgnxrKWAMlkL2n3OipOVT7Z7d9A7iDL.w -k /Users/ksmeets/Local/Projects/SDO/domain.key -u https://login.salesforce.com -s
+./bin/run.js clone:listview -i /Users/ksmeets/Local/Projects/SDO/listviewclone.csv -r /Users/ksmeets/Local/Projects/SDO -n 3MVG9SOw8KERNN0.2nOtUkdNWY45cnwTDz8.PBwwCbu2F4vzAU.YYgnxrKWAMlkL2n3OipOVT7Z7d9A7iDL.w -k /Users/ksmeets/Local/Projects/SDO/domain.key -u https://login.salesforce.com -m clone|validate|delete
 
 ./bin/run.js clone:listview -i /Users/ksmeets/Projects/CGAMS/input/listviewclone2.csv -r /Users/ksmeets/Projects/CGAMS/output -n 3MVG9fdJGowvdgN0tzA5aHhCtwJfB8jhZrogdFw0ooE_lLhaT0I.PoBdMOAEGIzJnI3pZHU57l7AV1MCUgtlH -k /Users/ksmeets/Projects/CGAMS/private_key_sf2.pem -u <mydomain.my.salesforce.com>
 
@@ -54,8 +54,7 @@ Any errors recorded on <csv_input_file>.log
 
 NOTE:
 
-- This function checks if the cloned name already exists - if it does then the output CSV will have a status: OK- Duplicate
-- It works best if the new listviews that are loaded and shared via public group have a prefix or suffix (i.e. CGT\_ or \_CGT). The duplicate names check helps to prevent mishaps (i.e. when running multiple times)
+- It works best if the new listviews that are loaded and shared via public group have a prefix or suffix (i.e. CGT\_ or \_CGT).
 
 BELOW FOR REFERENCE ONLY
 Extract:listview

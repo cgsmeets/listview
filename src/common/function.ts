@@ -365,13 +365,12 @@ export default class Function {
       return this.MapSelector.get(sobjecttype) as string;
   }
 
-  public async ProcessUserListView (browser: Browser, Param: cloneParam[], bSkip: boolean): Promise<string> {
+  public async ProcessUserListView (browser: Browser, Param: cloneParam[]): Promise<string> {
 
     this.Log('init playwright browser');
     const page = await browser.newPage();
-    page.setDefaultTimeout(60_000);
+    page.setDefaultTimeout(30_000);
 
-    const setListView: Set<string> = new Set<string>();
     const username = Param[0].userName as string;
     this.Log('Username: ' + username);
     try {
@@ -396,12 +395,6 @@ export default class Function {
          if (fParam2.Status !== 'OK') {
           try {
             this.Log('LV:' + fParam2.sObjectType + ':' + fParam2.listViewName);
-            if (bSkip && setListView.has(fParam2.sObjectType + ':' + fParam2.listViewName)) {
-
-              fParam2.Status='OK';
-              fParam2.Error='EXISTS';
-              this.Log('Skipping Existing ListView: ' + fParam2.sObjectType + ':' + fParam2.listViewName + ':' + fParam2.listViewId);
-            } else {
 
               // go to the listview
               this.Log( 'Navigate to ListView: ' + this.sfDomain + '/lightning/o/' + fParam2.sObjectType + '/list?filterName=' + fParam2.listViewId);
@@ -474,11 +467,16 @@ export default class Function {
                   this.Log('Standard Object Wait for popup to disappear');
                   await page.waitForSelector('[class="modal-container slds-modal__container"]', { state: 'detached' });
               }
-            }
-            this.iListViewCount++;
-            fParam2.Status = 'OK';
-            fParam2.Error = '';
+              this.iListViewCount++;
+              fParam2.Status = 'OK';
 
+              const lvResult = await con2.query('SELECT Id \
+                FROM ListView where createdbyid = ' + '\'' + userId + '\'' +
+                ' AND SobjectType = ' + '\'' + fParam2.sObjectType + '\'' +
+                ' AND Name = ' + '\'' + fParam2.listViewName?.replace(/[\\$'"]/g, '\\$&') + '\'' +
+                ' ORDER BY CREATEDDATE DESC LIMIT 1');
+                if (lvResult.totalSize === 1) fParam2.Error = lvResult.records[0].Id;
+                else fParam2.Error = 'ID NOT FOUND';
 
           } catch (e) {
             const err = e as SfError;

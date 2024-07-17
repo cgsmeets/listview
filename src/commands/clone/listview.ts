@@ -45,11 +45,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
       required: true,
       exists: true,
     }),
-    'skip-duplicate': Flags.boolean({
-      summary: messages.getMessage('flags.skip-duplicate.summary'),
-      char: 's',
-      required: false,
-    }),
+
     instance: Flags.custom({
       summary: messages.getMessage('flags.instance.summary'),
       char: 'u',
@@ -82,7 +78,6 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
 
     common.Log('Starting ListView Clone');
     common.Log('Operation Mode: ' + flags['mode']);
-    common.Log('Skipping Duplicates: ' + flags['skip-duplicate']);
     common.Log('input csv: ' + flags['input-csv']);
     common.Log('output path: ' + flags['output-csv']);
     common.Log('Client Id: ' + flags['name']);
@@ -122,7 +117,7 @@ export default class CloneListview extends SfCommand<CloneListviewResult> {
 
           switch (flags['mode']) {
             case 'clone':
-         //     mJobs.set(iJob, common.ProcessUserListView(browser, fParam, flags['skip-duplicate']));
+              mJobs.set(iJob, common.ProcessUserListView(browser, fParam));
               break;
             case 'delete':
               mJobs.set(iJob, common.DeleteUserListView(browser, fParam));
