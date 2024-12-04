@@ -6,7 +6,7 @@
     "@oclif/core": "^3.26.2",
     "@playwright/browser-chromium": "^1.44.1",
     "@salesforce/core": "^7.2.0",
-    "@salesforce/sf-plugins-core": "^9.0.1",
+    "@salesforce/sf-plugins-core": "^9.1.1",
     "fast-xml-parser": "^4.4.0",
     "playwright": "^1.44.1"
   },
